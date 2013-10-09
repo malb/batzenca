@@ -7,6 +7,7 @@ import os
 
 if not os.path.exists(PALECADIR):
     os.mkdir(PALECADIR)
+    os.chmod(PALECADIR, 0700)
 
 if not os.path.isdir(PALECADIR):
     raise IOError("Cannot create configuration directory '%' because a file with the same name exists already."%PALECADIR)

@@ -49,6 +49,7 @@ class GnuPG(object):
         if home_dir is not None:
             if not os.path.exists(home_dir):
                 os.mkdir(home_dir)
+                os.chmod(home_dir, 0700)
 
             for engine in pyme.core.get_engine_info():
                 pyme.core.set_engine_info(engine.protocol, engine.file_name, home_dir)
