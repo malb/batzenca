@@ -76,25 +76,25 @@ class Release(Base):
                 warnings.warn("More than one release for mailinglist '%s' with date '%s' in database, picking first one"%(mailinglist, date))
             return res.first()
 
-    def inherit(self, date=None, policy=None, deactivate_invalid=True, verbose=True):
+    def inherit(self, date=None, policy=None, deactivate_invalid=True):
         active_keys   = list(self.active_keys)
         inactive_keys = list(self.inactive_keys)
 
         if policy is None:
             policy = self.policy
-
-        release = Releases(mailinglist=self, 
-                           date=date, 
-                           active_keys=active_keys, 
-                           inactive_keys=inactive_keys, 
-                           policy=policy)
+            
+        release = Release(mailinglist=self.mailinglist, 
+                          date=date, 
+                          active_keys = active_keys, 
+                          inactive_keys = inactive_keys, 
+                          policy=policy)
 
         if deactivate_invalid:
-            release.deactivate_invalid(verbose=verbose) 
+            release.deactivate_invalid() 
 
         for key in self.active_keys:
             if self.has_exception(key):
-                releases.add_exception(key)
+                release.add_exception(key)
 
         return release
 
