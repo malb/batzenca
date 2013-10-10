@@ -193,6 +193,15 @@ class GnuPG(object):
         signedtext = sig.read()
         return signedtext
 
+    def msg_encrypt(self, msg, keyids, encrypt_to_untrusted=False):
+        keys = [self.key_get(keyid) for keyid in keyids]
+        plain = pyme.core.Data(msg)
+        cipher = pyme.core.Data()
+        self.ctx.op_encrypt(keys, encrypt_to_untrusted, plain, cipher)
+        cipher.seek(0,0)
+        return cipher.read()
+    
+
     def sig_verify(self, msg, sig, is_detached=True):
 
         for line in msg.splitlines():
