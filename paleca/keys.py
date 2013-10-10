@@ -63,7 +63,11 @@ class Key(Base):
 
     @classmethod
     def from_name(cls, name):
-        "Query the database for name"
+        """
+        .. note::
+
+           The returned object was queried from the main session and lives there.
+        """
         from setup import session as session_
         res = session_.query(cls).filter(cls.name == name)
 
@@ -76,6 +80,11 @@ class Key(Base):
 
     @classmethod
     def from_email(cls, email):
+        """
+        .. note::
+
+           The returned object was queried from the main session and lives there.
+        """
         from setup import session as session_
         res = session_.query(cls).filter(cls.email == email)
 
@@ -87,8 +96,45 @@ class Key(Base):
             return res.first()
 
     @classmethod
-    def from_file(cls, filename):
-        raise NotImplementedError
+    def from_filename(cls, filename):
+        """
+        .. note::
+
+           The returned object was not added to any session, any keys found in ``filename`` were
+           added to the GnuPG database.
+        """
+        from gnupg import gpgobj
+
+        with open(filename) as fh:
+            data = fh.read()
+            res = gpgobj.keys_import(data)
+            if len(res) == 0:
+                raise EntryNotFound("No key found in in file '%s'"%filename)
+            else:
+                if len(res) > 1:
+                    warnings.warn("More than one key found in file '%s', picking first one.\n"%filename)
+                fpr = res.keys()[0]
+                return cls(int("0x"+fpr[-16:],16))
+
+    @classmethod
+    def from_str(cls, ascii_data):
+        """
+           .. note::
+        
+           The returned object was not added to any session, any keys found in ``ascii_data`` were
+           added to the GnuPG database.
+        """
+        from gnupg import gpgobj
+        res = gpgobj.keys_import(data)
+        if len(res) == 0:
+            cut = "\n".join(ascii_data.splitlines()[:20])
+            raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
+        else:
+            cut = "\n".join(ascii_data.splitlines()[:20])
+            if len(res) > 1:
+                warnings.warn("""More than one key found in string, picking first one\n\n%s"""%cut)
+            fpr = res.keys()[0]
+            return cls(int("0x"+fpr[-16:],16))
         
     def is_valid(self):
         from gnupg import gpgobj
