@@ -222,7 +222,7 @@ class GnuPG(object):
         # Print "unsigned" text. Rewind since verify put plain2 at EOF.
         msg.seek(0,0)
         
-    def key_sign(self, target, id, local=False):
+    def key_sign(self, id, signer, local=False):
         key = self.key_get(id)
 
         out = pyme.core.Data()
@@ -240,8 +240,8 @@ class GnuPG(object):
         }
 
         self.ctx.signers_clear()
-        self.ctx.signers_add(key)
-        self.ctx.op_edit(target, edit_fnc, helper, out)
+        self.ctx.signers_add(signer)
+        self.ctx.op_edit(key, edit_fnc, helper, out)
 
 
     def keys_import(self, data):
@@ -250,7 +250,7 @@ class GnuPG(object):
         res =  self.ctx.op_import_result()
         return dict((r.fpr, r.status) for r in res.imports)
 
-    def key_revsig(self, target, id, code=4, msg=""):
+    def key_revsig(self, id, signer, code=4, msg=""):
         key = self.key_get(id)
 
         out = pyme.core.Data()
@@ -277,8 +277,8 @@ class GnuPG(object):
             "data"            : out,
         }
         self.ctx.signers_clear()
-        self.ctx.signers_add(key)
-        self.ctx.op_edit(target, edit_fnc, helper, out)
+        self.ctx.signers_add(signer)
+        self.ctx.op_edit(key, edit_fnc, helper, out)
 
 # from pygpa
 
