@@ -110,16 +110,17 @@ class Peer(Base):
             return res.first()
 
     def __repr__(self):
-        return "<Peer: %s, %s>"%(str(self.id), self.name)
-
-        
+        return unicode(u"<Peer: %s, %s>"%(self.id, self.name)).encode('utf-8')
 
     def __str__(self):
-        data = ", ".join(map(unicode, (self.data0, self.data1, self.data2, self.data3)))
+        return unicode(self).encode('utf-8')
+        
+    def __unicode__(self):
+        data = u", ".join( (self.data0, self.data1, self.data2, self.data3) )
         if data:
-            return "%s (%s)"%(self.name, data)
+            return u"%s (%s)"%(self.name, data)
         else:
-            return "%s"%self.name
+            return u"%s"%self.name
 
     def __hash__(self):
         return hash((self.name, self.data0, self.data1, self.data2, self.data3))
