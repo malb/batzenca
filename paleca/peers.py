@@ -135,9 +135,26 @@ class Peer(Base):
 
 
 def merge_peers(left, right):
+    from setup import session
+    if isinstance(left, int):
+        left = session.query(Peer).filter(Peer.id == left)
+
+    if isinstance(right, int):
+        right = session.query(Peer).filter(Peer.id == right)
+
     from setup import session as session_
     merged = Peer.merge(left, right)
     session_.add(merged)
     session_.delete(left)
     session_.delete(right)
     return merged
+
+
+def find_duplicates():
+    from setup import session
+    peers = session.query(Peer).all()
+    email_addresses = set()
+    for peer in sorted(peers, key=lambda x: x.name):
+        print u"%20s %s"%(peer.name, peer.email)
+
+
