@@ -1,6 +1,6 @@
 from base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.associationproxy import association_proxy
 
 import datetime
 import warnings
@@ -11,34 +11,32 @@ class Key(Base):
 
     __tablename__ = 'keys'
 
-    id          = Column(Integer, primary_key=True)           # database id
-    kid         = Column(String, nullable=False, unique=True) # 8 byte pgp key id of the form 0x0123456789abcdef
-    name        = Column(String)                              # user id
-    email       = Column(String)                              # email as stored in key
-    date_added  = Column(Date)                                # date it was added to the database
-    peer_id     = Column(Integer, ForeignKey("peers.id"))     # points to the peer this key belongs to
+    id        = Column(Integer, primary_key=True)           # database id
+    kid       = Column(String, nullable=False, unique=True) # 8 byte pgp key id of the form 0x0123456789abcdef
+    name      = Column(String)                              # user id
+    email     = Column(String)                              # email as stored in key
+    timestamp = Column(Date)                                # date it was added to the database
+    peer_id   = Column(Integer, ForeignKey("peers.id"))     # points to the peer this key belongs to
 
-    def __init__(self, kid, name=None, email=None, date_added=None):
+    releases    = association_proxy('release_associations', 'release')
+    
+    def __init__(self, kid, name=None, email=None, timestamp=None):
         self.kid = "0x%016x"%kid
 
         from gnupg import gpgobj
         if not gpgobj.key_exists(self.kid):
-            if name is None or email is None:
+            if name is None or email is None or timestamp is None:
                 raise ValueError("The key %s does not exist in GnuPG and not enough information was provided for generating Key instance without it."%self.kid)
-            self.name      = name.strip()
-            self.email      = email.strip() # TODO: perform e-mail validation
-            if date_added is None:
-                date_added = datetime.date.today()
-            self.date_added = date_added
+            self.name      = unicode(name.strip())
+            self.email     = str(email.strip())
+            self.timestamp = timestamp
             return
 
         uid = gpgobj.key_uid(self.kid)
 
         self.name = uid.name
-        self.email = uid.email
-        
-        if date_added is None:
-            self.date_added = datetime.date.today()
+        self.email = str(uid.email)
+        self.timestamp = gpgobj.key_timestamp(self.kid)
 
     @classmethod
     def from_keyid(cls, kid):
@@ -123,7 +121,7 @@ class Key(Base):
         return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
 
     def __lt__(self, other):
-        return self.creation_date() < other.creation_date()
+        return self.timestamp < other.timestamp
 
     def __hash__(self):
         return int(self.kid, 16)

@@ -11,14 +11,14 @@ class Peer(Base):
     """
     __tablename__ = 'peers'
 
-    id          = Column(Integer, primary_key=True)
-    name        = Column(String, nullable=False)
-    keys        = relationship('Key', backref=backref('peer', order_by=id))
+    id    = Column(Integer, primary_key=True)
+    name  = Column(String, nullable=False)
+    keys  = relationship('Key', backref=backref('peer'), order_by=Key.timestamp)
 
-    data0       = Column(String)
-    data1       = Column(String)
-    data2       = Column(String)
-    data3       = Column(String)
+    data0 = Column(String)
+    data1 = Column(String)
+    data2 = Column(String)
+    data3 = Column(String)
 
     def __init__(self, name, keys, data0='', data1='', data2='', data3=''):
         """
@@ -32,10 +32,10 @@ class Peer(Base):
         else:
             self.keys = keys
 
-        self.data0 = data0
-        self.data1 = data1
-        self.data2 = data2
-        self.data3 = data3
+        self.data0 = unicode(data0)
+        self.data1 = unicode(data1)
+        self.data2 = unicode(data2)
+        self.data3 = unicode(data3)
 
     @classmethod
     def merge(cls, left, right):

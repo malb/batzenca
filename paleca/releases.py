@@ -22,7 +22,7 @@ class ReleaseKeyAssociation(Base):
     policy_exception = Column(Boolean)
     is_active        = Column(Boolean)
 
-    key              = relationship("Key", backref=backref("releases", cascade="all, delete-orphan") )
+    key              = relationship("Key", backref=backref("release_associations", cascade="all, delete-orphan", order_by="Release.date") )
     release          = relationship("Release", backref=backref("key_associations", cascade="all, delete-orphan") )
 
     def __init__(self, key, active=True, policy_exception=False):
