@@ -301,7 +301,7 @@ class GnuPG(object):
             "USERID_HINT"     : None,
             "EOF"             : None,
 
-            "signer"          : key,
+            "signer"          : signer,
             "skip"            : 0, 
             "data"            : out,
         }
@@ -336,7 +336,8 @@ def edit_fnc(stat, args, helper):
 
             if stat2str[stat] == "GET_BOOL" and args == "ask_revoke_sig.one":
                 for sk in helper["signer"].subkeys:
-                    if sk.keyid in data:
+                    #0x....
+                    if sk.keyid[2:].upper() in data:
                         return "Y"
                 return "N"
 
