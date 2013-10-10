@@ -136,6 +136,8 @@ class Release(Base):
     
     def publish(self, previous=None, check=True):
 
+        self.date = datetime.date.today()
+        
         keys = []
 
         if check:
