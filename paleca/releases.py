@@ -103,7 +103,7 @@ class Release(Base):
             if assoc.is_active and (ignore_exceptions or not assoc.policy_exception):
                 self.policy.check(assoc.key)
     def __repr__(self):
-        s = "<Release: %d, %s, %s (%s + %s) keys>"%(self.id, self.date, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
+        s = "<Release: %s, %s, %s (%s + %s) keys>"%(self.id, self.date, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
         return unicode(s).encode('utf-8')
                 
     def __str__(self):
