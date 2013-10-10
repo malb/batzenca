@@ -125,7 +125,7 @@ class Key(Base):
            added to the GnuPG database.
         """
         from gnupg import gpgobj
-        res = gpgobj.keys_import(data)
+        res = gpgobj.keys_import(ascii_data)
         if len(res) == 0:
             cut = "\n".join(ascii_data.splitlines()[:20])
             raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
