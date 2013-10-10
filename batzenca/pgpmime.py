@@ -12,8 +12,7 @@ from email.mime.base import MIMEBase
 import os
 import mimetypes
 
-from paleca.gnupg import gpgobj as gnupg
-
+from gnupg import gpgobj as gnupg
 
 
 class PGPMIMEsigned(MIMEMultipart):

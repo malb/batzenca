@@ -56,7 +56,7 @@ class Policy(Base):
         algorithms -- tuple of allowed algorithms
 
         """
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
 
         self.name = name
         self.implementation_date = implementation_date
@@ -81,7 +81,7 @@ class Policy(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).join(Key).filter(Key.kid == key.kid)
 
         if res.count() == 0:
@@ -93,7 +93,7 @@ class Policy(Base):
 
     @property
     def algorithms(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return set([gpgobj.str_to_alg[e] for e in self.algorithms_str.split(",")])
 
     def check_length(self, key):
@@ -104,7 +104,7 @@ class Policy(Base):
         return True
 
     def check_algorithms(self, key):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
 
         key_algorithms = set(key.algorithms)
         algorithms = self.algorithms

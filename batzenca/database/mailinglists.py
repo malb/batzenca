@@ -32,7 +32,7 @@ class MailingList(Base):
 
     @classmethod
     def from_name(cls, name):
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.name == name)
         if res.count() == 0:
             raise EntryNotFound("No mailinglist with name '%s' found in database."%name)

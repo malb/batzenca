@@ -23,7 +23,7 @@ class Key(Base):
     def __init__(self, kid, name=None, email=None, timestamp=None):
         self.kid = "0x%016x"%kid
 
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         if not gpgobj.key_exists(self.kid):
             if name is None or email is None or timestamp is None:
                 raise ValueError("The key %s does not exist in GnuPG and not enough information was provided for generating Key instance without it."%self.kid)
@@ -51,7 +51,7 @@ class Key(Base):
             kid = "0x%016x"%kid
         except TypeError:
             pass
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.kid == kid)
 
         if res.count() == 0:
@@ -68,7 +68,7 @@ class Key(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.name == name)
 
         if res.count() == 0:
@@ -85,7 +85,7 @@ class Key(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.email == email)
 
         if res.count() == 0:
@@ -103,7 +103,7 @@ class Key(Base):
            The returned object was not added to any session, any keys found in ``filename`` were
            added to the GnuPG database.
         """
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
 
         with open(filename) as fh:
             data = fh.read()
@@ -124,7 +124,7 @@ class Key(Base):
            The returned object was not added to any session, any keys found in ``ascii_data`` were
            added to the GnuPG database.
         """
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         res = gpgobj.keys_import(ascii_data)
         if len(res) == 0:
             cut = "\n".join(ascii_data.splitlines()[:20])
@@ -137,11 +137,11 @@ class Key(Base):
             return cls(int("0x"+fpr[-16:],16))
         
     def is_valid(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_valid(self.kid)
 
     def is_expired(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_expired(self.kid)
 
     def __str__(self):
@@ -151,11 +151,11 @@ class Key(Base):
         return "<Key: %s>"%(self.kid)
 
     def __len__(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_min_len(self.kid)
 
     def expires(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_expires(self.kid)
 
     def __lt__(self, other):
@@ -166,20 +166,20 @@ class Key(Base):
 
     @property
     def algorithms(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_pubkey_algos(self.kid)
 
     def is_signed_by(self, signer):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
 
     def sign(self, signer):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         signer = gpgobj.key_get(signer.kid)
         gpgobj.key_sign(self.kid, signer)
 
     def revoke_signature(self, signer, reason=""):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         signer = gpgobj.key_get(signer.kid)
         gpgobj.key_revsig(self.kid, signer, 4, msg=reason)
         

@@ -65,7 +65,7 @@ class Peer(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).join(Key).filter(Key.kid == key.kid)
 
         if res.count() == 0:
@@ -82,7 +82,7 @@ class Peer(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.name == name)
 
         if res.count() == 0:
@@ -99,7 +99,7 @@ class Peer(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(Peer).join(Key).filter(Key.peer_id == Peer.id, Key.email == email)
 
         if res.count() == 0:
@@ -138,14 +138,14 @@ class Peer(Base):
         return str(self.key.email)
         
 def merge_peers(left, right):
-    from setup import session
+    from batzenca.setup import session
     if isinstance(left, int):
         left = session.query(Peer).filter(Peer.id == left)
 
     if isinstance(right, int):
         right = session.query(Peer).filter(Peer.id == right)
 
-    from setup import session as session_
+    from batzenca.setup import session as session_
     merged = Peer.merge(left, right)
     session_.add(merged)
     session_.delete(left)
@@ -154,7 +154,7 @@ def merge_peers(left, right):
 
 
 def find_duplicates():
-    from setup import session
+    from batzenca.setup import session
     peers = session.query(Peer).all()
     email_addresses = set()
     for peer in sorted(peers, key=lambda x: x.name):

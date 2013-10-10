@@ -66,7 +66,7 @@ class Release(Base):
 
     @classmethod
     def from_mailinglist_and_date(cls, mailinglist, date):
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(cls).filter(cls.mailinglist_id == mailinglist.id, cls.date == date)
 
         if res.count() == 0:
@@ -114,7 +114,7 @@ class Release(Base):
             print key
 
     def dump_keys(self):
-        from gnupg import gpgobj
+        from batzenca.gnupg import gpgobj
         data = gpgobj.keys_export(self.keys)
         return data.read()
 
@@ -161,21 +161,25 @@ class Release(Base):
             diff_joined  = ""
             diff_changed = ""
             diff_left    = ""
-        return self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
-                                                      diff_joined=diff_joined, diff_changed=diff_changed, diff_left=diff_left)
+        msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
+                                                     diff_joined=diff_joined, diff_changed=diff_changed, diff_left=diff_left)
+        from batzenca.gnupg import gpgobj
+        keys = gpgobj.keys_export( [key.kid for key in self.keys] )
+
+        return msg, keys
 
     @property
     def active_keys(self):
         if self.id is None:
             return [assoc for assoc in self.key_associations if assoc.is_active]
-        from setup import session as session_
+        from batzenca.setup import session as session_
         return session_.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True).all()
 
     @property
     def inactive_keys(self):
         if self.id is None:
             return [assoc for assoc in self.key_associations if not assoc.is_active]
-        from setup import session as session_
+        from batzenca.setup import session as session_
         return session_.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
 
     def deactivate_invalid(self):
@@ -193,7 +197,7 @@ class Release(Base):
                     return assoc
             raise ValueError("Key '%s' is not in release '%s'"%(key, self))
 
-        from setup import session as session_
+        from batzenca.setup import session as session_
         res = session_.query(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == key.id, ReleaseKeyAssociation.right_id == self.id)
         if res.count() > 1:
             raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(key, self))
@@ -219,11 +223,13 @@ class Release(Base):
     def add_key(self, key, active=True, check=True):
         if check and active:
             self.policy.check(key)
-
+            
+        # TODO check if peer is already in release
+            
         self.key_associations.append(ReleaseKeyAssociation(key=key, active=active))
 
     def __contains__(self, obj):
-        from setup import session as session_
+        from batzenca.setup import session as session_
 
 
         if self.id is None:
@@ -262,3 +268,6 @@ class Release(Base):
             return self.mailinglist.releases[idx-1]
         else:
             return None
+
+    def csv(self):
+        raise NotImplementedError
