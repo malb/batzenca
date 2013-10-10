@@ -133,7 +133,10 @@ class Peer(Base):
                 return key
         return keys[0]
 
-
+    @property
+    def email(self):
+        return str(self.key.email)
+        
 def merge_peers(left, right):
     from setup import session
     if isinstance(left, int):
