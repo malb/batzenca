@@ -252,7 +252,27 @@ class GnuPG(object):
         self.ctx.signers_add(signer)
         self.ctx.op_edit(key, edit_fnc, helper, out)
 
+    def key_set_trust(self, id, trust):
+        key = self.key_get(id)
 
+        out = pyme.core.Data()
+
+        helper = {
+            "GET_LINE"        : { "keyedit.prompt" : ("trust", "quit"), 
+                                  "edit_ownertrust.value" : str(trust),                                  
+                              },
+            "GET_BOOL"        : { "edit_ownertrust.set_ultimate.okay" : "Y" }, 
+            "GOT_IT"          : None,
+            "NEED_PASSPHRASE" : None,
+            "GOOD_PASSPHRASE" : None,
+            "USERID_HINT"     : None,
+            "EOF"             : None,
+
+            "skip"            : 0, 
+            "data"            : out,
+        }
+        self.ctx.op_edit(key, edit_fnc, helper, out)
+        
     def keys_import(self, data):
         data = pyme.core.Data(data)
         self.ctx.op_import(data)
