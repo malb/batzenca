@@ -158,10 +158,6 @@ class Key(Base):
         from gnupg import gpgobj
         return gpgobj.key_expires(self.kid)
 
-    def creation_date(self):
-        from gnupg import gpgobj
-        return gpgobj.key_timestamp(self.kid)
-
     def __lt__(self, other):
         return self.timestamp < other.timestamp
 
