@@ -174,12 +174,14 @@ class Key(Base):
         return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
 
     def sign(self, signer):
-        signer = gpgobj.key_get(signer)
-        gpgobj.key_sign(self.id, signer)
+        from gnupg import gpgobj
+        signer = gpgobj.key_get(signer.kid)
+        gpgobj.key_sign(self.kid, signer)
 
     def revoke_signature(self, signer, reason=""):
-        signer = gpgobj.key_get(signer)
-        gpgobj.key_revsig(self.id, signer, 4, msg=reason)
+        from gnupg import gpgobj
+        signer = gpgobj.key_get(signer.kid)
+        gpgobj.key_revsig(self.kid, signer, 4, msg=reason)
         
     def hard_delete(self):
         raise NotImplementedError
