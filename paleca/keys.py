@@ -162,10 +162,6 @@ class Key(Base):
         from gnupg import gpgobj
         return gpgobj.key_timestamp(self.kid)
 
-    def is_signed_by(self, signer):
-        from gnupg import gpgobj
-        return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
-
     def __lt__(self, other):
         return self.timestamp < other.timestamp
 
@@ -177,8 +173,18 @@ class Key(Base):
         from gnupg import gpgobj
         return gpgobj.key_pubkey_algos(self.kid)
 
-    def sign(self, signer):
-        raise NotImplementedError
+    def is_signed_by(self, signer):
+        from gnupg import gpgobj
+        return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
 
+    def sign(self, signer):
+        signer = gpgobj.key_get(signer)
+        gpgobj.key_sign(self.id, signer)
+
+    def revoke_signature(self, signer, reason=""):
+        signer = gpgobj.key_get(signer)
+        gpgobj.key_revsig(self.id, signer, 4, msg=reason)
+        
     def hard_delete(self):
         raise NotImplementedError
+
