@@ -102,7 +102,10 @@ class Release(Base):
         for assoc in self.key_associations:
             if assoc.is_active and (ignore_exceptions or not assoc.policy_exception):
                 self.policy.check(assoc.key)
-
+    def __repr__(self):
+        s = "<Release: %d, %s, %s (%s + %s) keys>"%(self.id, self.date, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
+        return unicode(s).encode('utf-8')
+                
     def __str__(self):
         return "release %s for mailinglist '%s' with %d keys (active: %d, inactive: %d)"%(self.date.isoformat(), self.mailinglist, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
 
