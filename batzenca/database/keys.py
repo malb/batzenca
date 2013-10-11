@@ -136,9 +136,9 @@ class Key(Base):
             fpr = res.keys()[0]
             return cls(int("0x"+fpr[-16:],16))
         
-    def is_valid(self):
+    def __bool__(self):
         from batzenca.gnupg import gpgobj
-        return gpgobj.key_valid(self.kid)
+        return gpgobj.key_okay(self.kid)
 
     def is_expired(self):
         from batzenca.gnupg import gpgobj
@@ -182,7 +182,15 @@ class Key(Base):
         from batzenca.gnupg import gpgobj
         signer = gpgobj.key_get(signer.kid)
         gpgobj.key_revsig(self.kid, signer, 4, msg=reason)
-        
+
+    def is_valid(self):
+        # TODO: key_validity > ?
+        return bool(self) and gnupg.key_validity(self.kid) > 0
+
     def hard_delete(self):
         raise NotImplementedError
 
+    @property
+    def _gnupg_key(self):
+        from batzenca.gnupg import gpgobj
+        return gpgobj.key_get(self.kid)

@@ -185,7 +185,7 @@ class Release(Base):
     def deactivate_invalid(self):
         for assoc in self.key_associations:
             if assoc.is_active:
-                if not assoc.key.is_valid():
+                if not bool(assoc.key):
                     assoc.is_active = False
                 elif not assoc.key.is_signed_by(self.policy.ca):
                     assoc.is_active = False

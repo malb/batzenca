@@ -58,48 +58,63 @@ class GnuPG(object):
         self.ctx.set_keylist_mode(pyme.constants.keylist.mode.SIGS)
         self.ctx.set_armor(1)
 
-    def key_exists(self, id):
+    def key_exists(self, keyid):
         try:
-            key = self.ctx.get_key(str(id), 0)
+            key = self.ctx.get_key(str(keyid), 0)
             return True
         except pyme.errors.GPGMEError, e:
             return False
 
-    def key_get(self, id):
-        if id in self._key_cache:
-            return self._key_cache[id]
+    def key_get(self, keyid):
+        if isinstance(keyid, pyme.pygpgme._gpgme_key):
+            return keyid
+
+        # we are caching for performance reasons
+        # TODO: does anything depend on us not caching?
+        if keyid in self._key_cache:
+            return self._key_cache[keyid]
 
         try:
             try:
-                key = self.ctx.get_key("0x%x"%id, 0)
+                key = self.ctx.get_key("0x%x"%keyid, 0)
+                self._key_cache[keyid] = key
+                return key
             except TypeError:
-                key = self.ctx.get_key(str(id), 0)
-            self._key_cache[id] = key
-            return key
+                pass
+            try:
+                if keyid.startswith("0x"):
+                    key = self.ctx.get_key(str(keyid), 0)
+                else:
+                    key = self.ctx.get_key("0x"+str(keyid), 0)
+                self._key_cache[keyid] = key
+                return key
+            except AttributeError:
+                raise KeyError("Key '%s' not found."%keyid)
         except pyme.errors.GPGMEError, e:
-            raise KeyError("Key ID '%s' not found."%id)
+            raise KeyError("Key '%s' not found."%keyid)
 
-    def key_uid(self, id):
-        key = self.key_get(id)
-        uids = [x for x in key.uids if x.invalid == 0]
-        if len(uids) == 0:
-            raise KeyError("All UIDs are invalid for key '%s'."%id)
+    def key_uid(self, keyid):
+        uids = self.key_get(keyid).uids
         return UID(unicode(uids[0].name, 'utf-8'), unicode(uids[0].email, 'utf-8'), unicode(uids[0].comment, 'utf-8'))
 
-    def key_valid(self, id):
-        try:
-            self.key_uid(id)
-        except KeyError:
-            return False
-
+    def key_okay(self, id):
         key = self.key_get(id)
 
-        subkeys = [subkey for subkey in key.subkeys if (not subkey.revoked and not subkey.expired and not subkey.disabled and not subkey.invalid)]
+        # it seems the .invalid attribute is not used by GnuPG
+        assert(all(subkey.invalid == 0 for subkey in key.subkeys))
+        
+        subkeys = [subkey for subkey in key.subkeys if (not subkey.revoked and not subkey.expired and not subkey.disabled)]
         if len(subkeys) == 0:
             return False
-        
+
+        if not any(subkey.can_sign for subkey in subkeys) or not any(subkey.can_encrypt for subkey in subkeys):
+            return False
         return True
-            
+
+    def key_validity(self, kid):
+        key = self.key_get(kid)
+        return max([uid.validity for uid in key.uids])
+        
     def key_pubkey_algos(self, id):
         key = self.key_get(id)
         return tuple([subkey.pubkey_algo for subkey in key.subkeys])
@@ -142,7 +157,7 @@ class GnuPG(object):
 
         sign_keys = set()
         for subkey in signer_key.subkeys:
-            if subkey.can_sign and not subkey.disabled and not subkey.invalid and not subkey.revoked:
+            if subkey.can_sign and not subkey.disabled and not subkey.revoked:
                 sign_keys.add(subkey.keyid)
             
         sigs = {}
@@ -193,23 +208,34 @@ class GnuPG(object):
         signedtext = sig.read()
         return signedtext
 
-    def msg_encrypt(self, msg, keyids, encrypt_to_untrusted=False):
+    def key_okay_encrypt(self, keyid):)
+        key = self.key_get(keyid)
+        if  not self.key_okay(key) or not self.key_validity(key) >= 4:
+            return False
+        return True
+
+    
+    def msg_encrypt(self, msg, keyids, always_trust=False):
         keys = [self.key_get(keyid) for keyid in keyids]
+
+        for key in keys:
+            if  not self.key_okay(key) or not self.key_validity(key) >= 4:
+                raise ValueError("No UID of the key 0x%s has a sufficient level of validity, set always_trust=True if you want to force encryption."%key.subkeys[0].fpr[-16:])
+        
         plain = pyme.core.Data(msg)
         cipher = pyme.core.Data()
-        self.ctx.op_encrypt(keys, encrypt_to_untrusted, plain, cipher)
+        flags = pyme.constants.ENCRYPT_NO_ENCRYPT_TO
+        if always_trust:
+            flags |= constants.ENCRYPT_ALWAYS_TRUST
+        self.ctx.op_encrypt(keys, flags, plain, cipher)
+        # TODO: deal with op_encrypt_result
         cipher.seek(0,0)
         return cipher.read()
     
 
     def sig_verify(self, msg, sig, is_detached=True):
-
-        for line in msg.splitlines():
-            print "&" + line
-
         msg = pyme.core.Data(msg)
         sig = pyme.core.Data(sig)
-
 
         if is_detached:
             self.ctx.op_verify(sig, msg, None)

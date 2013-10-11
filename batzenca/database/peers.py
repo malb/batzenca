@@ -129,7 +129,7 @@ class Peer(Base):
     def key(self):
         keys = sorted(self.keys, reverse=True)
         for key in keys:
-            if key.is_valid():
+            if key:
                 return key
         return keys[0]
 
