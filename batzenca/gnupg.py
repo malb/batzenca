@@ -208,7 +208,7 @@ class GnuPG(object):
         signedtext = sig.read()
         return signedtext
 
-    def key_okay_encrypt(self, keyid):)
+    def key_okay_encrypt(self, keyid):
         key = self.key_get(keyid)
         if  not self.key_okay(key) or not self.key_validity(key) >= 4:
             return False
