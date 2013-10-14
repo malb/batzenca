@@ -53,9 +53,9 @@ class PGPMIMEencrypted(MIMEMultipart):
         encrypted = session.gnupg.msg_encrypt(body, recipients)
 
         payload = MIMEApplication(_data=encrypted,
-                                  _subtype='octet-stream; name="encrypted.asc"',
+                                  _subtype='octet-stream',
                                   _encoder=encode_7or8bit)
-        payload['Content-Description'] = 'OpenPGP encrypted message'
+        payload['Content-Disposition'] = 'inline; name="encrypted.asc"'
         payload.set_charset('us-ascii')
 
         control = MIMEApplication(_data='Version: 1\n',
@@ -65,7 +65,7 @@ class PGPMIMEencrypted(MIMEMultipart):
         
         self.attach(control)
         self.attach(payload)
-        self['Content-Disposition'] = 'inline'
+        self['Content-Disposition'] = 'attachment'
 
 def PGPMIME(msg, recipients, signer):
     return PGPMIMEencrypted( PGPMIMEsigned(msg, signer), recipients)
