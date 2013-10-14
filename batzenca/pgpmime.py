@@ -12,7 +12,7 @@ from email.mime.base import MIMEBase
 import os
 import mimetypes
 
-from gnupg import gpgobj as gnupg
+from batzenca.session import session
 
 
 class PGPMIMEsigned(MIMEMultipart):
@@ -24,7 +24,7 @@ class PGPMIMEsigned(MIMEMultipart):
 
         if signer is not None:
             msg_str = flatten(msg)
-            sig     = gnupg.msg_sign(msg_str, signer)
+            sig     = session.gnupg.msg_sign(msg_str, signer)
             sig = MIMEApplication(_data=sig,
                                   _subtype='pgp-signature; name="signature.asc"',
                                   _encoder=encode_7or8bit)
@@ -41,7 +41,7 @@ class PGPMIMEsigned(MIMEMultipart):
         assert(len(subparts) == 2)
         msg, sig = subparts
         msg_str = flatten(msg)
-        res = gnupg.verify_signature(msg_str, sig.get_payload())
+        res = session.gnupg.verify_signature(msg_str, sig.get_payload())
         return res
 
 class PGPMIMEencrypted(MIMEMultipart):
@@ -50,7 +50,7 @@ class PGPMIMEencrypted(MIMEMultipart):
         MIMEMultipart.__init__(self, 'encrypted', micalg='pgp-sha1', protocol='application/pgp-encrypted')
 
         body = flatten(msg)
-        encrypted = gnupg.msg_encrypt(body, recipients)
+        encrypted = session.gnupg.msg_encrypt(body, recipients)
 
         payload = MIMEApplication(_data=encrypted,
                                   _subtype='octet-stream; name="encrypted.asc"',

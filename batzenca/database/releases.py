@@ -66,8 +66,8 @@ class Release(Base):
 
     @classmethod
     def from_mailinglist_and_date(cls, mailinglist, date):
-        from batzenca.setup import session as session_
-        res = session_.query(cls).filter(cls.mailinglist_id == mailinglist.id, cls.date == date)
+        from batzenca.session import session
+        res = session.db_session.query(cls).filter(cls.mailinglist_id == mailinglist.id, cls.date == date)
 
         if res.count() == 0:
             raise EntryNotFound("No release for mailinglist '%s' with date '%s' in database."%(mailinglist, date))
@@ -114,8 +114,8 @@ class Release(Base):
             print key
 
     def dump_keys(self):
-        from batzenca.gnupg import gpgobj
-        data = gpgobj.keys_export(self.keys)
+        from batzenca.session import session
+        data = session.gnupg.keys_export(self.keys)
         return data.read()
 
     def diff(self, other):
@@ -163,8 +163,8 @@ class Release(Base):
             diff_left    = ""
         msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
                                                      diff_joined=diff_joined, diff_changed=diff_changed, diff_left=diff_left)
-        from batzenca.gnupg import gpgobj
-        keys = gpgobj.keys_export( [key.kid for key in self.keys] )
+        from batzenca.session import session
+        keys = session.gnupg.keys_export( [key.kid for key in self.keys] )
 
         return msg, keys
 
@@ -172,15 +172,15 @@ class Release(Base):
     def active_keys(self):
         if self.id is None:
             return [assoc for assoc in self.key_associations if assoc.is_active]
-        from batzenca.setup import session as session_
-        return session_.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True).all()
+        from batzenca.session import session
+        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True).all()
 
     @property
     def inactive_keys(self):
         if self.id is None:
             return [assoc for assoc in self.key_associations if not assoc.is_active]
-        from batzenca.setup import session as session_
-        return session_.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
+        from batzenca.session import session
+        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
 
     def deactivate_invalid(self):
         for assoc in self.key_associations:
@@ -197,8 +197,8 @@ class Release(Base):
                     return assoc
             raise ValueError("Key '%s' is not in release '%s'"%(key, self))
 
-        from batzenca.setup import session as session_
-        res = session_.query(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == key.id, ReleaseKeyAssociation.right_id == self.id)
+        from batzenca.session import session
+        res = session.db_session.query(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == key.id, ReleaseKeyAssociation.right_id == self.id)
         if res.count() > 1:
             raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(key, self))
         if res.count() == 0:
@@ -221,16 +221,21 @@ class Release(Base):
         raise NotImplementedError
 
     def add_key(self, key, active=True, check=True):
+        # TODO check if peer is already in release
+        if key.peer is None:
+            raise ValueError("Key '%s' has no peer associated"%key)
+        else:
+            if key.peer in self:
+                raise ValueError("Peer '%s' associated with Key '%s' already has an active key in this release"%(key.peer, key))
+            
         if check and active:
             self.policy.check(key)
             
-        # TODO check if peer is already in release
             
         self.key_associations.append(ReleaseKeyAssociation(key=key, active=active))
 
     def __contains__(self, obj):
-        from batzenca.setup import session as session_
-
+        from batzenca.session import session
 
         if self.id is None:
             raise RuntimeError("The object '%s' was not committed to the database yet, we cannot issue queries involving its id yet."%self)
@@ -242,7 +247,7 @@ class Release(Base):
             raise TypeError("Cannot handle objects of type '%s'"%type(obj))
 
         if isinstance(obj, Key):
-            res = session_.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == obj.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.left_id.is_active == True)
+            res = session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == obj.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
             if res.count() == 0:
                 return False
             elif res.count() == 1:
@@ -251,7 +256,7 @@ class Release(Base):
                 raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(obj, self))
             
         elif isinstance(obj, Peer):
-            res = session_.query(Peer).join(Key).join(ReleaseKeyAssociation).filter(Key.peer_id == obj.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.left_id.is_active == True)
+            res = session.db_session.query(Peer).join(Key).join(ReleaseKeyAssociation).filter(Key.peer_id == obj.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
             if res.count() == 0:
                 return False
             elif res.count() == 1:

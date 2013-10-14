@@ -46,6 +46,8 @@ class GnuPG(object):
     def __init__(self, home_dir=None):
         pyme.core.check_version(None)
 
+        self.home_dir = home_dir
+        
         if home_dir is not None:
             if not os.path.exists(home_dir):
                 os.mkdir(home_dir)
@@ -461,5 +463,3 @@ def edit_fnc(stat, args, helper):
         pass
 
 
-from config import GPGHOMEDIR
-gpgobj = GnuPG(GPGHOMEDIR)

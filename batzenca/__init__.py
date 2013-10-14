@@ -5,8 +5,9 @@ from database.mailinglists import MailingList
 from database.policies import Policy, PolicyViolation
 from database.releases import Release
 
-from batzenca.setup import session
-from gnupg import gpgobj
+import datetime
+
+from batzenca.session import session
 
 import warnings
 warnings.simplefilter("always", PolicyViolation)

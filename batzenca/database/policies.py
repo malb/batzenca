@@ -56,7 +56,7 @@ class Policy(Base):
         algorithms -- tuple of allowed algorithms
 
         """
-        from batzenca.gnupg import gpgobj
+        from batzenca.session import session
 
         self.name = name
         self.implementation_date = implementation_date
@@ -67,9 +67,9 @@ class Policy(Base):
         algs = []
         for alg in algorithms:
             try:
-                algs.append(gpgobj.alg_to_str[alg])
+                algs.append(session.gnupg.alg_to_str[alg])
             except KeyError:
-                raise ValueError("Algoritm '%s' is unknown. Supported algorithms are '%s'"%(alg, ", ".gpgobj.str_to_alg.keys()))
+                raise ValueError("Algoritm '%s' is unknown. Supported algorithms are '%s'"%(alg, ", ".session.gnupg.str_to_alg.keys()))
         self.algorithms_str = ",".join(algs)
             
         self.description = unicode(description)
@@ -81,8 +81,8 @@ class Policy(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from batzenca.setup import session as session_
-        res = session_.query(cls).join(Key).filter(Key.kid == key.kid)
+        from batzenca.session import session
+        res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)
 
         if res.count() == 0:
             raise EntryNotFound("No peer matching key '%s' in database."%key)
@@ -93,8 +93,8 @@ class Policy(Base):
 
     @property
     def algorithms(self):
-        from batzenca.gnupg import gpgobj
-        return set([gpgobj.str_to_alg[e] for e in self.algorithms_str.split(",")])
+        from batzenca.session import session
+        return set([session.gnupg.str_to_alg[e] for e in self.algorithms_str.split(",")])
 
     def check_length(self, key):
         if len(key) < self.key_len:
@@ -104,7 +104,7 @@ class Policy(Base):
         return True
 
     def check_algorithms(self, key):
-        from batzenca.gnupg import gpgobj
+        from batzenca.session import session
 
         key_algorithms = set(key.algorithms)
         algorithms = self.algorithms
@@ -114,7 +114,7 @@ class Policy(Base):
 
         if not key_algorithms.issubset(algorithms):
             diff = key_algorithms.difference(algorithms)
-            diff_str = ",".join(gpgobj.alg_to_str[e] for e in diff)
+            diff_str = ",".join(session.gnupg.alg_to_str[e] for e in diff)
             msg = "Key '%s' uses algorithm(s) '%s' which is/are not in '%s' as mandated by '%s'."%(key, diff_str, self.algorithms_str, self)
             warnings.warn(msg, PolicyViolation)
             return False

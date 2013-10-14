@@ -23,8 +23,8 @@ class Key(Base):
     def __init__(self, kid, name=None, email=None, timestamp=None):
         self.kid = "0x%016x"%kid
 
-        from batzenca.gnupg import gpgobj
-        if not gpgobj.key_exists(self.kid):
+        from batzenca.session import session
+        if not session.gnupg.key_exists(self.kid):
             if name is None or email is None or timestamp is None:
                 raise ValueError("The key %s does not exist in GnuPG and not enough information was provided for generating Key instance without it."%self.kid)
             self.name      = unicode(name.strip())
@@ -32,11 +32,11 @@ class Key(Base):
             self.timestamp = timestamp
             return
 
-        uid = gpgobj.key_uid(self.kid)
+        uid = session.gnupg.key_uid(self.kid)
 
         self.name = uid.name
         self.email = str(uid.email)
-        self.timestamp = gpgobj.key_timestamp(self.kid)
+        self.timestamp = session.gnupg.key_timestamp(self.kid)
 
     @classmethod
     def from_keyid(cls, kid):
@@ -51,8 +51,8 @@ class Key(Base):
             kid = "0x%016x"%kid
         except TypeError:
             pass
-        from batzenca.setup import session as session_
-        res = session_.query(cls).filter(cls.kid == kid)
+        from batzenca.session import session
+        res = session.db_session.query(cls).filter(cls.kid == kid)
 
         if res.count() == 0:
             raise EntryNotFound("No key with key id '%s' in database."%kid)
@@ -68,8 +68,8 @@ class Key(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from batzenca.setup import session as session_
-        res = session_.query(cls).filter(cls.name == name)
+        from batzenca.session import session
+        res = session.db_session.query(cls).filter(cls.name == name)
 
         if res.count() == 0:
             raise ValueError("No key with name '%s' in database."%name)
@@ -85,8 +85,8 @@ class Key(Base):
 
            The returned object was queried from the main session and lives there.
         """
-        from batzenca.setup import session as session_
-        res = session_.query(cls).filter(cls.email == email)
+        from batzenca.session import session
+        res = session.db_session.query(cls).filter(cls.email == email)
 
         if res.count() == 0:
             raise EntryNotFound("No key with email '%s' in database."%email)
@@ -103,11 +103,11 @@ class Key(Base):
            The returned object was not added to any session, any keys found in ``filename`` were
            added to the GnuPG database.
         """
-        from batzenca.gnupg import gpgobj
+        from batzenca.session import session
 
         with open(filename) as fh:
             data = fh.read()
-            res = gpgobj.keys_import(data)
+            res = session.gnupg.keys_import(data)
             if len(res) == 0:
                 raise EntryNotFound("No key found in in file '%s'"%filename)
             else:
@@ -124,8 +124,8 @@ class Key(Base):
            The returned object was not added to any session, any keys found in ``ascii_data`` were
            added to the GnuPG database.
         """
-        from batzenca.gnupg import gpgobj
-        res = gpgobj.keys_import(ascii_data)
+        from batzenca.session import session
+        res = session.gnupg.keys_import(ascii_data)
         if len(res) == 0:
             cut = "\n".join(ascii_data.splitlines()[:20])
             raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
@@ -136,13 +136,13 @@ class Key(Base):
             fpr = res.keys()[0]
             return cls(int("0x"+fpr[-16:],16))
         
-    def __bool__(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_okay(self.kid)
+    def __nonzero__(self):
+        from batzenca.session import session
+        return session.gnupg.key_okay(self.kid)
 
     def is_expired(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_expired(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_expired(self.kid)
 
     def __str__(self):
         return u"%s: %s <%s>"%(self.kid,self.name,self.email)
@@ -151,12 +151,12 @@ class Key(Base):
         return "<Key: %s>"%(self.kid)
 
     def __len__(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_min_len(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_min_len(self.kid)
 
     def expires(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_expires(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_expires(self.kid)
 
     def __lt__(self, other):
         return self.timestamp < other.timestamp
@@ -166,20 +166,20 @@ class Key(Base):
 
     @property
     def algorithms(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_pubkey_algos(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_pubkey_algos(self.kid)
 
     def is_signed_by(self, signer):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_any_uid_is_signed_by(self.kid, signer.kid)
+        from batzenca.session import session
+        return session.gnupg.key_any_uid_is_signed_by(self.kid, signer.kid)
 
     def sign(self, signer):
-        from batzenca.gnupg import gpgobj
-        gpgobj.key_sign(self.kid, signer.kid)
+        from batzenca.session import session
+        session.gnupg.key_sign(self.kid, signer.kid)
 
     def revoke_signature(self, signer, reason=""):
-        from batzenca.gnupg import gpgobj
-        gpgobj.key_revsig(self.kid, signer.kid, 4, msg=reason)
+        from batzenca.session import session
+        session.gnupg.key_revsig(self.kid, signer.kid, 4, msg=reason)
 
     def is_valid(self):
         # TODO: key_validity > ?
@@ -194,8 +194,8 @@ class Key(Base):
 
            This will open an interactive session using rawinput
         """
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_edit(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_edit(self.kid)
 
     def delete_signature(self, signer):
         """
@@ -203,15 +203,15 @@ class Key(Base):
 
            This will open an interactive session using rawinput
         """
-        from batzenca.gnupg import gpgobj
+        from batzenca.session import session
         try:
-            return gpgobj.key_delete_signature(self.kid, signer.kid)
+            return session.gnupg.key_delete_signature(self.kid, signer.kid)
         except AttributeError:
-            return gpgobj.key_delete_signature(self.kid, signer)
+            return session.gnupg.key_delete_signature(self.kid, signer)
 
     def signatures(self):
-        from batzenca.gnupg import gpgobj
-        keyids = tuple("0x"+keyid for keyid in gpgobj.key_signatures(self.kid))
+        from batzenca.session import session
+        keyids = tuple("0x"+keyid for keyid in session.gnupg.key_signatures(self.kid))
         sigs = []
         for keyid in keyids:
             if int(self.kid, 16) == int(keyid,16):
@@ -225,5 +225,5 @@ class Key(Base):
         
     @property
     def _gnupg_key(self):
-        from batzenca.gnupg import gpgobj
-        return gpgobj.key_get(self.kid)
+        from batzenca.session import session
+        return session.gnupg.key_get(self.kid)
