@@ -290,7 +290,7 @@ class GnuPG(object):
         signer_key = self.key_get(signer_keyid)
 
         if not self.have_secret_key(signer_keyid):
-            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
+            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
         
         out = pyme.core.Data()
 
@@ -370,7 +370,7 @@ class GnuPG(object):
         signer_key = self.key_get(signer_keyid)
 
         if not self.have_secret_key(signer_keyid):
-            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
+            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
         
         out = pyme.core.Data()
 
