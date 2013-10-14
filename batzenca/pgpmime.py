@@ -31,7 +31,6 @@ class PGPMIMEsigned(MIMEMultipart):
             sig['Content-Description'] = 'This is a digital signature.'
             sig.set_charset('us-ascii')
 
-            #msg_ = MIMEMultipart('signed', micalg='pgp-sha1', protocol='application/pgp-signature')
             MIMEMultipart.__init__(self, 'signed', micalg='pgp-sha1', protocol='application/pgp-signature')
             self.attach(msg)
             self.attach(sig)
