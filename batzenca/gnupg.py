@@ -218,9 +218,12 @@ class GnuPG(object):
         export_keys.seek(0,0)
         return export_keys.read()
 
-    def msg_sign(self, msg, id):
-        key = self.key_get(id)
+    def msg_sign(self, msg, keyid):
+        key = self.key_get(keyid)
 
+        if not self.have_secret_key(keyid):
+            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
+        
         msg = pyme.core.Data(msg)
         sig = pyme.core.Data()
 
