@@ -133,7 +133,11 @@ class Release(Base):
         peers_left    = peers_out.difference(peers_in)
 
         return peers_joined, peers_changed, peers_left
-    
+
+    @property
+    def peers(self):
+        return tuple(Peer.from_key(key) for key in sorted(self.active_keys, key=lambda x: x.name.lower()))
+        
     def publish(self, previous=None, check=True):
 
         self.date = datetime.date.today()
