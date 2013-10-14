@@ -93,6 +93,26 @@ class GnuPG(object):
         except pyme.errors.GPGMEError, e:
             raise KeyError("Key '%s' not found."%keyid)
 
+    def have_secret_key(self, keyid):
+        try:
+            try:
+                key = self.ctx.get_key("0x%x"%keyid, True)
+                if key:
+                    return True
+            except TypeError:
+                pass
+            try:
+                if keyid.startswith("0x"):
+                    key = self.ctx.get_key(str(keyid), True)
+                else:
+                    key = self.ctx.get_key("0x"+str(keyid), True)
+                if key:
+                    return True
+            except AttributeError:
+                return False
+        except pyme.errors.GPGMEError, e:
+            return False
+            
     def key_uid(self, keyid):
         uids = self.key_get(keyid).uids
         return UID(unicode(uids[0].name, 'utf-8'), unicode(uids[0].email, 'utf-8'), unicode(uids[0].comment, 'utf-8'))
@@ -160,23 +180,26 @@ class GnuPG(object):
             if subkey.can_sign and not subkey.disabled and not subkey.revoked:
                 sign_keys.add(subkey.keyid)
             
-        sigs = {}
-        for uid in key.uids:
-            for signature in uid.signatures:
-                if signature.keyid in sign_keys:
-                    if not signature.expired and not signature.revoked:
-                        sigs[signature.keyid] = signature
-
-        for uid in key.uids:
-            for signature in uid.signatures:
-                if signature.keyid in sign_keys:
-                    if signature.revoked and signature.keyid in sigs:
-                        del sigs[signature.keyid]
-        if sigs:
+        if sign_keys.intersection(self.key_signatures(id)):
             return True
         else:
             return False
 
+    def key_signatures(self, keyid):
+        key = self.key_get(keyid)
+        sigs = set()
+        for uid in key.uids:
+            for sig in uid.signatures:
+                if not sig.expired and not sig.revoked:
+                    sigs.add(sig.keyid)
+
+        for uid in key.uids:
+            for sig in uid.signatures:
+                if sig.revoked and sig.keyid in sigs:
+                    sigs.remove(sig.keyid)
+                
+        return sigs
+            
     def key_export(self, id):
         from pyme.core import Data
         export_keys = Data()
@@ -257,9 +280,13 @@ class GnuPG(object):
         # Print "unsigned" text. Rewind since verify put plain2 at EOF.
         msg.seek(0,0)
         
-    def key_sign(self, id, signer, local=False):
-        key = self.key_get(id)
+    def key_sign(self, keyid, signer_keyid, local=False):
+        key = self.key_get(keyid)
+        signer_key = self.key_get(signer_keyid)
 
+        if not self.have_secret_key(signer_keyid):
+            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
+        
         out = pyme.core.Data()
 
         helper = {
@@ -275,9 +302,35 @@ class GnuPG(object):
         }
 
         self.ctx.signers_clear()
-        self.ctx.signers_add(signer)
+        self.ctx.signers_add(signer_key)
         self.ctx.op_edit(key, edit_fnc, helper, out)
+        self._key_cache = {} # invalidate the cache
 
+    def key_delete_signature(self, keyid, signer_keyid):
+        key = self.key_get(keyid)
+        signer_key = self.key_get(signer_keyid)
+
+        out = pyme.core.Data()
+
+        for i, uid in enumerate(key.uids):
+        
+            cleaner = {
+                "GET_LINE"        : {"keyedit.prompt" : ("uid %d"%(i+1), "delsig", "save")}, 
+                "GET_BOOL"        : {"keyedit.save.okay" : "Y", "keyedit.delsig.unknown" : "Y"}, 
+                "GOT_IT"          : None,
+                "NEED_PASSPHRASE" : None,
+                "GOOD_PASSPHRASE" : None,
+                "USERID_HINT"     : None,
+                "EOF"             : None,
+
+                "signer"          : signer_key,
+                "skip"            : 0, 
+                "data"            : out,
+            }
+            self.ctx.op_edit(key, edit_fnc, cleaner, out)
+
+        self._key_cache = {} # invalidate the cache
+            
     def key_set_trust(self, id, trust):
         key = self.key_get(id)
 
@@ -298,16 +351,22 @@ class GnuPG(object):
             "data"            : out,
         }
         self.ctx.op_edit(key, edit_fnc, helper, out)
+        self._key_cache = {} # invalidate the cache
         
     def keys_import(self, data):
+        self._key_cache = {} # invalidate the cache
         data = pyme.core.Data(data)
         self.ctx.op_import(data)
         res =  self.ctx.op_import_result()
         return dict((r.fpr, r.status) for r in res.imports)
 
-    def key_revsig(self, id, signer, code=4, msg=""):
-        key = self.key_get(id)
+    def key_revsig(self, keyid, signer_keyid, code=4, msg=""):
+        key = self.key_get(keyid)
+        signer_key = self.key_get(signer_keyid)
 
+        if not self.have_secret_key(signer_keyid):
+            raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
+        
         out = pyme.core.Data()
 
         msg += "\n\n"
@@ -327,14 +386,37 @@ class GnuPG(object):
             "USERID_HINT"     : None,
             "EOF"             : None,
 
-            "signer"          : signer,
+            "signer"          : signer_key,
             "skip"            : 0, 
             "data"            : out,
         }
         self.ctx.signers_clear()
-        self.ctx.signers_add(signer)
+        self.ctx.signers_add(signer_key)
         self.ctx.op_edit(key, edit_fnc, helper, out)
+        self._key_cache = {} # invalidate the cache
 
+    def key_edit(self, keyid):
+        """
+        .. warning:
+
+           This will open an interactive session using rawinput
+        """
+        key = self.key_get(keyid)
+        out = pyme.core.Data()
+
+        helper = {
+            "GOT_IT"          : None,
+            "NEED_PASSPHRASE" : None,
+            "GOOD_PASSPHRASE" : None,
+            "EOF"             : None,
+
+            "skip"            : 0, 
+            "data"            : out,
+        }
+        self.ctx.signers_clear()
+        self.ctx.op_edit(key, edit_fnc, helper, out)
+        self._key_cache = {} # invalidate the cache
+        
 # from pygpa
 
 stat2str = {}
@@ -343,6 +425,7 @@ for name in dir(pyme.constants.status):
         stat2str[getattr(pyme.constants.status, name)] = name
 
 def edit_fnc(stat, args, helper):
+
     try:
         while True:
             helper["data"].seek(helper["skip"],0)
@@ -359,6 +442,11 @@ def edit_fnc(stat, args, helper):
                         helper[stat2str[stat]][args] = ret[1:]
                         return ret[0]
                     return ret
+
+            if stat2str[stat] == "GET_BOOL" and args == "keyedit.delsig.valid":
+                if any(sk.keyid[2:].upper() in data for sk in helper["signer"].subkeys):
+                    return "Y"
+                return "N"
 
             if stat2str[stat] == "GET_BOOL" and args == "ask_revoke_sig.one":
                 for sk in helper["signer"].subkeys:

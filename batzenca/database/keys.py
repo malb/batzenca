@@ -175,13 +175,11 @@ class Key(Base):
 
     def sign(self, signer):
         from batzenca.gnupg import gpgobj
-        signer = gpgobj.key_get(signer.kid)
-        gpgobj.key_sign(self.kid, signer)
+        gpgobj.key_sign(self.kid, signer.kid)
 
     def revoke_signature(self, signer, reason=""):
         from batzenca.gnupg import gpgobj
-        signer = gpgobj.key_get(signer.kid)
-        gpgobj.key_revsig(self.kid, signer, 4, msg=reason)
+        gpgobj.key_revsig(self.kid, signer.kid, 4, msg=reason)
 
     def is_valid(self):
         # TODO: key_validity > ?
@@ -190,6 +188,41 @@ class Key(Base):
     def hard_delete(self):
         raise NotImplementedError
 
+    def _edit(self):
+        """
+        .. warning:
+
+           This will open an interactive session using rawinput
+        """
+        from batzenca.gnupg import gpgobj
+        return gpgobj.key_edit(self.kid)
+
+    def delete_signature(self, signer):
+        """
+        .. warning:
+
+           This will open an interactive session using rawinput
+        """
+        from batzenca.gnupg import gpgobj
+        try:
+            return gpgobj.key_delete_signature(self.kid, signer.kid)
+        except AttributeError:
+            return gpgobj.key_delete_signature(self.kid, signer)
+
+    def signatures(self):
+        from batzenca.gnupg import gpgobj
+        keyids = tuple("0x"+keyid for keyid in gpgobj.key_signatures(self.kid))
+        sigs = []
+        for keyid in keyids:
+            if int(self.kid, 16) == int(keyid,16):
+                sigs.append(self)
+                continue
+            try:
+                sigs.append(Key.from_keyid(int(keyid,16)))
+            except EntryNotFound:
+                sigs.append(keyid)
+        return sigs
+        
     @property
     def _gnupg_key(self):
         from batzenca.gnupg import gpgobj
