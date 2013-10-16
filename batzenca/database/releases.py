@@ -163,9 +163,10 @@ class Release(Base):
             return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
         
         
-    def publish(self, previous=None, check=True):
+    def publish(self, previous=None, check=True, testrun=False):
 
-        self.date = datetime.date.today()
+        if not testrun:
+            self.date = datetime.date.today()
         
         keys = []
 
