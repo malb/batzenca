@@ -116,9 +116,10 @@ class Peer(Base):
         return unicode(self).encode('utf-8')
         
     def __unicode__(self):
-        data = u", ".join( (self.data0, self.data1, self.data2, self.data3) )
+        data = (self.data0, self.data1, self.data2, self.data3)
+        data = u", ".join(d for d in data if d)
         if data:
-            return u"%s (%s)"%(self.name, data)
+            return u"%s - %s"%(self.name, data)
         else:
             return u"%s"%self.name
 
