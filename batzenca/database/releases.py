@@ -138,7 +138,7 @@ class Release(Base):
     def diff(self, other):
         prev_keys = set(other.active_keys + self.inactive_keys)
         self_keys = set(self.active_keys)
-        
+
         keys_out = prev_keys.difference(self_keys)
         keys_in  = self_keys.difference(prev_keys)
 
@@ -149,11 +149,17 @@ class Release(Base):
         peers_changed = peers_in.intersection(peers_out)
         peers_left    = peers_out.difference(peers_in)
 
-        return peers_joined, peers_changed, peers_left
+
+        return keys_in, keys_out, peers_joined, peers_changed, peers_left
 
     @property
     def peers(self):
         return tuple(Peer.from_key(key) for key in sorted(self.active_keys, key=lambda x: x.name.lower()))
+
+    @staticmethod
+    def _format_entry(i, key):
+            return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
+        
         
     def publish(self, previous=None, check=True):
 
@@ -165,25 +171,29 @@ class Release(Base):
             self.verify()
 
         for i,key in enumerate(sorted(self.active_keys, key=lambda x: x.name.lower())):
-            peer = Peer.from_key(key)
-            keys.append(u"  %3d. %s %s <%s>"%(i,key.kid, key.name, key.email))
-            keys.append(u"       %s - %s %s %s %s"%(peer.name, peer.data0, peer.data1, peer.data2, peer.data3))
+            keys.extend(Release._format_entry(i, key))
         keys = "\n".join(keys)
 
         if previous is None:
             previous = self.prev
 
         if previous:
-            peers_joined, peers_changed, peers_left = self.diff(previous)
-            diff_joined  = ", ".join(peer.name for peer in peers_joined)
-            diff_changed = ", ".join(peer.name for peer in peers_changed)
-            diff_left    = ", ".join(peer.name for peer in peers_left)
+            keys_in, keys_out, peers_joined, peers_changed, peers_left = self.diff(previous)
+
+            keys_in  = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(keys_in)],  tuple()))
+            keys_out = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(keys_out)], tuple()))
+
+            peers_joined  = ", ".join(peer.name for peer in peers_joined)
+            peers_changed = ", ".join(peer.name for peer in peers_changed)
+            peers_left    = ", ".join(peer.name for peer in peers_left)
         else:
-            diff_joined  = ""
-            diff_changed = ""
-            diff_left    = ""
+            keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
         msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
-                                                     diff_joined=diff_joined, diff_changed=diff_changed, diff_left=diff_left)
+                                                     keys_in       = keys_in,
+                                                     keys_out      = keys_out,
+                                                     peers_in      = peers_joined,
+                                                     peers_changed = peers_changed,
+                                                     peers_out     = peers_left)
         from batzenca.session import session
         keys = session.gnupg.keys_export( [key.kid for key in self.keys] )
 
