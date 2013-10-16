@@ -241,7 +241,6 @@ class GnuPG(object):
         if  not self.key_okay(key) or not self.key_validity(key) >= 4:
             return False
         return True
-
     
     def msg_encrypt(self, msg, keyids, always_trust=False):
         keys = [self.key_get(keyid) for keyid in keyids]
@@ -255,11 +254,17 @@ class GnuPG(object):
         flags = pyme.constants.ENCRYPT_NO_ENCRYPT_TO
         if always_trust:
             flags |= constants.ENCRYPT_ALWAYS_TRUST
-        self.ctx.op_encrypt(keys, flags, plain, cipher)
-        # TODO: deal with op_encrypt_result
+        retval = self.ctx.op_encrypt(keys, flags, plain, cipher)
+
         cipher.seek(0,0)
         return cipher.read()
-    
+
+    def msg_decrypt(self, cipher):
+        cipher = pyme.core.Data(cipher)
+        plain  = pyme.core.Data()
+        self.ctx.op_decrypt(cipher, plain)
+        plain.seek(0,0)
+        return plain.read()
 
     def sig_verify(self, msg, sig, is_detached=True):
         msg = pyme.core.Data(msg)
@@ -273,17 +278,13 @@ class GnuPG(object):
 
         # List results for all signatures. Status equal 0 means "Ok".
         index = 0
-        for sign in result.signatures:
-            index += 1
-            print "signature", index, ":"
-            print "  summary:    ", (sign.summary & pyme.constants.SIGSUM_VALID) == 1
-            print "  status:     ", sign.status
-            print "  timestamp:  ", sign.timestamp
-            print "  fingerprint:", sign.fpr
-            print "  uid:        ", self.ctx.get_key(sign.fpr, 0).uids[0].uid
+        sigs = []
 
-        # Print "unsigned" text. Rewind since verify put plain2 at EOF.
-        msg.seek(0,0)
+        for sign in result.signatures:
+            if (sign.summary & pyme.constants.SIGSUM_VALID) == 1:
+                sigs.append( sign.fpr )
+
+        return tuple(sigs)
         
     def key_sign(self, keyid, signer_keyid, local=False):
         key = self.key_get(keyid)
