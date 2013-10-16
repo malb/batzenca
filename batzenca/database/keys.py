@@ -209,6 +209,7 @@ class Key(Base):
         except AttributeError:
             return session.gnupg.key_delete_signature(self.kid, signer)
 
+    @property
     def signatures(self):
         from batzenca.session import session
         keyids = tuple("0x"+keyid for keyid in session.gnupg.key_signatures(self.kid))
