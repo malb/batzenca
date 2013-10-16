@@ -222,7 +222,7 @@ class Key(Base):
                 sigs.append(Key.from_keyid(int(keyid,16)))
             except EntryNotFound:
                 sigs.append(keyid)
-        return sigs
+        return tuple(sigs)
         
     @property
     def _gnupg_key(self):
