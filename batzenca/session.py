@@ -31,6 +31,15 @@ class Session:
     @property
     def query(self):
         return self.db_session.query
+
+    @property
+    def add(self):
+        return self.db_session.add
+
+    @property
+    def add_all(self):
+        return self.db_session.add_all
+
         
 BATZENCADIR  = os.environ.get("BATZENCADIR", os.path.expanduser("~") + os.path.sep + ".batzenca")
 session = Session(BATZENCADIR)
