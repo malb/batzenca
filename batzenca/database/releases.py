@@ -246,7 +246,7 @@ class Release(Base):
         if key.peer is None:
             raise ValueError("Key '%s' has no peer associated"%key)
         else:
-            if key.peer in self:
+            if active and key.peer in self:
                 raise ValueError("Peer '%s' associated with Key '%s' already has an active key in this release"%(key.peer, key))
             
         if check and active:
