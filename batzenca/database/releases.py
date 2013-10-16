@@ -107,7 +107,24 @@ class Release(Base):
         return unicode(s).encode('utf-8')
                 
     def __str__(self):
-        return "release %s for mailinglist '%s' with %d keys (active: %d, inactive: %d)"%(self.date.isoformat(), self.mailinglist, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
+        from batzenca.database.policies import PolicyViolation
+        inact_no_sig = 0
+        inact_expired = 0
+        policy = self.policy
+        for key in self.keys:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", PolicyViolation)
+                if policy.check_ca_signature(key) == False:
+                    inact_no_sig += 1
+                    continue
+
+            if key.expires() and key.expires() < self.date:
+                inact_expired += 1
+                continue
+
+        return "date: %10s, list: %10s, policy date: %10s, active keys: %3d, inactive keys: %2d (expired: %2d, not signed: %2d), total keys: %3d"%(self.date, self.mailinglist.name, self.policy.implementation_date,
+                                                                                                                                                   len(self.active_keys), len(self.inactive_keys), inact_expired, inact_no_sig, len(self.keys))
+
 
     def print_active_keys(self):
         for key in sorted(self.active_keys):
