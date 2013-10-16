@@ -76,7 +76,7 @@ class Release(Base):
                 warnings.warn("More than one release for mailinglist '%s' with date '%s' in database, picking first one"%(mailinglist, date))
             return res.first()
 
-    def inherit(self, date=None, policy=None, deactivate_invalid=True):
+    def inherit(self, date=None, policy=None, deactivate_invalid=True, delete_old_inactive_keys=False):
         active_keys   = list(self.active_keys)
         inactive_keys = list(self.inactive_keys)
 
@@ -91,7 +91,9 @@ class Release(Base):
 
         if deactivate_invalid:
             release.deactivate_invalid() 
-
+        if delete_old_inactive_keys:
+            release.delete_old_inactive_keys(delete_old_inactive_keys)
+            
         for key in self.active_keys:
             if self.has_exception(key):
                 release.add_exception(key)
@@ -220,7 +222,29 @@ class Release(Base):
                     assoc.is_active = False
                 elif not assoc.key.is_signed_by(self.policy.ca):
                     assoc.is_active = False
-                    
+
+    def delete_old_inactive_keys(self, releasecount=True):
+        if not releasecount:
+            return
+
+        if releasecount is True:
+            releasecount = 5
+
+        old_release = self
+        for i in range(releasecount):
+            old_release = old_release.prev
+
+        delete_keys = []
+        for key in self.inactive_keys:
+            if key not in old_release.active_keys:
+                delete_keys.append(key)
+        for key in delete_keys:
+            assoc = self._get_assoc(key)
+            self.key_associations.remove(assoc)
+            from batzenca.session import session
+            session.db_session.delete(assoc)
+            
+                
     def _get_assoc(self, key):
         if key.id is None or self.id is None:
             for assoc in self.key_associations:
