@@ -1,16 +1,17 @@
-def thunderbird_rules(release, path):
-    fn = path + "/%s_thunderbird_rules.xml"%release.mailinglist.name
-    fh = open(fn, "w")
+def thunderbird_rules(release):
+    import StringIO
+    fh = StringIO.StringIO()
 
     fh.write("""<?xml version="1.0" ?>\n""")
     fh.write("  <pgpRuleList>\n")
-    key_ids = [str(assoc.key.kid) for peer in release.keys]
+    key_ids = [str(key.kid) for key in release.active_keys]
     fh.write("""    <pgpRule email="{%s}" encrypt="2" keyId="%s" negateRule="0" pgpMime="2" sign="2"/>\n"""%(release.mailinglist.email,", ".join(key_ids)))
     fh.write("  </pgpRuleList>\n")
+    content = fh.getvalue()
     fh.close()
-    return fn
+    return content
 
-
+    
 def plot_over_time(mailinglists):
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
