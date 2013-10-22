@@ -52,12 +52,12 @@ class MailingList(Base):
     def current_release(self):
         return self.releases[-1]
     
-    def new_release(self, date=None, inherit=True, deactivate_invalid=True):
+    def new_release(self, date=None, inherit=True, deactivate_invalid=True, delete_old_inactive_keys=True):
         if inherit is True:
-            return self.current_release.inherit(date=date, deactivate_invalid=deactivate_invalid)
+            return self.current_release.inherit(date=date, deactivate_invalid=deactivate_invalid, delete_old_inactive_keys=delete_old_inactive_keys)
         elif inherit:
             if inherit.mailinglist is not self:
                 raise ValueError("Cannot inherit from release '%s' because it is for '%s' instead of '%s'."%(inherit, inherit.mailinglist, self))
-            return inherit.inherit(date=date, deactivate_invalid=deactivate_invalid)
+            return inherit.inherit(date=date, deactivate_invalid=deactivate_invalid, delete_old_inactive_keys=delete_old_inactive_keys)
         else:
             return Release(mailinglist=self, date=date, keys=[], policy=self.policy)
