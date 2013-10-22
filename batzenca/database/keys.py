@@ -111,10 +111,12 @@ class Key(Base):
             if len(res) == 0:
                 raise EntryNotFound("No key found in in file '%s'"%filename)
             else:
-                if len(res) > 1:
-                    warnings.warn("More than one key found in file '%s', picking first one.\n"%filename)
-                fpr = res.keys()[0]
-                return cls(int("0x"+fpr[-16:],16))
+                if len(res) == 1:
+                    fpr = res.keys()[0]
+                    return cls(int("0x"+fpr[-16:],16))
+                else:
+                    fpr = res.keys()[0]
+                    return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
 
     @classmethod
     def from_str(cls, ascii_data):
@@ -130,10 +132,12 @@ class Key(Base):
             cut = "\n".join(ascii_data.splitlines()[:20])
             raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
         else:
-            cut = "\n".join(ascii_data.splitlines()[:20])
-            if len(res) > 1:
-                warnings.warn("""More than one key found in string, picking first one\n\n%s"""%cut)
-            fpr = res.keys()[0]
+            if len(res) == 1:
+                fpr = res.keys()[0]
+                return cls(int("0x"+fpr[-16:],16))
+            else:
+                fpr = res.keys()[0]
+                return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
             return cls(int("0x"+fpr[-16:],16))
         
     def __nonzero__(self):
