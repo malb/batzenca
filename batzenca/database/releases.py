@@ -212,7 +212,7 @@ class Release(Base):
     @property
     def inactive_keys(self):
         if self.id is None:
-            return [assoc for assoc in self.key_associations if not assoc.is_active]
+            return [assoc.key for assoc in self.key_associations if not assoc.is_active]
         from batzenca.session import session
         return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
 
