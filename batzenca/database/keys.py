@@ -187,7 +187,8 @@ class Key(Base):
 
     def is_valid(self):
         # TODO: key_validity > ?
-        return bool(self) and gnupg.key_validity(self.kid) > 0
+        from batzenca.session import session
+        return bool(self) and session.gnupg.key_validity(self.kid) > 0
 
     def hard_delete(self):
         raise NotImplementedError
