@@ -15,7 +15,7 @@ class PolicyViolation(Warning):
     We warn when a policy is violated.
     """
     def __init__(self, msg):
-        Warning.__init__(self, msg)
+        Warning.__init__(self, msg.encode('utf8'))
 
 class Policy(Base):
     """
@@ -98,7 +98,7 @@ class Policy(Base):
 
     def check_length(self, key):
         if len(key) < self.key_len:
-            msg = "Key '%s' has key length %d but at least %d is required by '%s'."%(key, len(key), self.key_len, self)
+            msg = u"Key '%s' has key length %d but at least %d is required by '%s'."%(unicode(key), len(key), self.key_len, unicode(self))
             warnings.warn(msg, PolicyViolation)
             return False
         return True
@@ -115,7 +115,7 @@ class Policy(Base):
         if not key_algorithms.issubset(algorithms):
             diff = key_algorithms.difference(algorithms)
             diff_str = ",".join(session.gnupg.alg_to_str[e] for e in diff)
-            msg = "Key '%s' uses algorithm(s) '%s' which is/are not in '%s' as mandated by '%s'."%(key, diff_str, self.algorithms_str, self)
+            msg = u"Key '%s' uses algorithm(s) '%s' which is/are not in '%s' as mandated by '%s'."%(unicode(key), diff_str, self.algorithms_str, unicode(self))
             warnings.warn(msg, PolicyViolation)
             return False
         return True
@@ -123,20 +123,20 @@ class Policy(Base):
     def check_expiration(self, key):
 
         if not key.expires() and self.key_lifespan > 0:
-            msg = "Key '%s'does not expire but expiry of %d days is mandated by '%s'."%(key, self.key_lifespan, self)
+            msg = u"Key '%s'does not expire but expiry of %d days is mandated by '%s'."%(unicode(key), self.key_lifespan, unicode(self))
             warnings.warn(msg, PolicyViolation)
             return False
         else:
             max_expiry = datetime.date.today() + datetime.timedelta(days=self.key_lifespan)
             if max_expiry < key.expires():
-                msg = "Key '%s' expires on %s but max allowed expiration date is %s."%(key, key.expires(), max_expiry)
+                msg = u"Key '%s' expires on %s but max allowed expiration date is %s."%(unicode(key), key.expires(), max_expiry)
                 warnings.warn(msg, PolicyViolation)
                 return False
             return True
 
     def check_ca_signature(self, key):
         if not key.is_signed_by(self.ca):
-            msg = "No UID of Key '%s' has a valid signature of the CA key '%s'"%(key, self.ca)
+            msg = u"No UID of Key '%s' has a valid signature of the CA key '%s'"%(unicode(key), unicode(self.ca))
             warnings.warn(msg, PolicyViolation)
             return False
         return True
