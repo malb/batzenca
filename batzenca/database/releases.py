@@ -138,18 +138,23 @@ class Release(Base):
         return data.read()
 
     def diff(self, other):
-        prev_keys = set(other.active_keys + self.inactive_keys)
-        self_keys = set(self.active_keys)
+        keys_prev = set(other.active_keys + self.inactive_keys)        
+        keys_curr = set(self.active_keys) # keys that are in this release
 
-        keys_out = prev_keys.difference(self_keys)
-        keys_in  = self_keys.difference(prev_keys)
+        # keys that used to be in but are not any more
+        keys_out = keys_prev.difference(keys_curr)
+        # keys that are new
+        keys_in  = keys_curr.difference(keys_prev)
 
-        peers_in  = set([Peer.from_key(key) for key in keys_in ])
-        peers_out = set([Peer.from_key(key) for key in keys_out])
+        
+        peers_prev = set([Peer.from_key(key) for key in other.active_keys])
+        peers_curr = set([Peer.from_key(key) for key in keys_curr])
+        peers_in   = set([Peer.from_key(key) for key in keys_in  ])
+        peers_out  = set([Peer.from_key(key) for key in keys_out ])
 
-        peers_joined  = peers_in.difference(peers_out)
+        peers_joined  = peers_curr.difference(peers_prev)
         peers_changed = peers_in.intersection(peers_out)
-        peers_left    = peers_out.difference(peers_in)
+        peers_left    = peers_prev.difference(peers_curr)
 
 
         return keys_in, keys_out, peers_joined, peers_changed, peers_left
