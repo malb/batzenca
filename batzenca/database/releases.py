@@ -22,7 +22,7 @@ class ReleaseKeyAssociation(Base):
     policy_exception = Column(Boolean)
     is_active        = Column(Boolean)
 
-    key              = relationship("Key", backref=backref("release_associations", cascade="all, delete-orphan", order_by="Release.date") )
+    key              = relationship("Key", backref=backref("release_associations", cascade="all, delete-orphan") )
     release          = relationship("Release", backref=backref("key_associations", cascade="all, delete-orphan") )
 
     def __init__(self, key, active=True, policy_exception=False):
@@ -126,7 +126,6 @@ class Release(Base):
 
         return "date: %10s, list: %10s, policy date: %10s, active keys: %3d, inactive keys: %2d (expired: %2d, not signed: %2d), total keys: %3d"%(self.date, self.mailinglist.name, self.policy.implementation_date,
                                                                                                                                                    len(self.active_keys), len(self.inactive_keys), inact_expired, inact_no_sig, len(self.keys))
-
 
     def print_active_keys(self):
         for key in sorted(self.active_keys):
