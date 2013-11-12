@@ -223,13 +223,3 @@ def merge_peers(left, right):
     session.db_session.delete(left)
     session.db_session.delete(right)
     return merged
-
-
-def find_duplicates():
-    from batzenca.session import session
-    peers = session.db_session.query(Peer).all()
-    email_addresses = set()
-    for peer in sorted(peers, key=lambda x: x.name):
-        print u"%20s %s"%(peer.name, peer.email)
-
-
