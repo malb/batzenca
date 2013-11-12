@@ -1,3 +1,8 @@
+"""
+Peers are people, typically.
+
+AUTHOR: Martin Albrecht <martinralbrecht+batzenca@googlemail.com>
+"""
 from base import Base, EntryNotFound
 from keys import Key
 
@@ -7,7 +12,9 @@ from sqlalchemy.orm import relationship, backref
 import warnings
 
 class Peer(Base):
-    """
+    """This class represents a peer which participates in mailing lists. Typically, a peer
+    represents a person which has one or many PGP keys associated with her.
+
     """
     __tablename__ = 'peers'
 
@@ -21,7 +28,17 @@ class Peer(Base):
     data3 = Column(String)
 
     def __init__(self, name, keys, data0='', data1='', data2='', data3=''):
-        """
+        """Construct a new instance of :class:`Peer` from a given name and key (or set thereof).
+        
+        INPUT:
+
+        - ``name`` - the name of the peer (a string)
+        - ``keys`` - an instance of :class:`Key` or a list of such instances
+        - ``data0`` - arbitrary data as a string
+        - ``data1`` - arbitrary data as a string
+        - ``data2`` - arbitrary data as a string
+        - ``data3`` - arbitrary data as a string
+
         .. note::
 
            The returned object was not added to any session.
@@ -39,12 +56,21 @@ class Peer(Base):
 
     @classmethod
     def merge(cls, left, right):
-        """
-        We favour left over right.
+        """Merge the two peers ``left`` and ``right`` into a new peer.
+
+        INPUT:
+
+        - ``left`` - an instance of :class:`Peer`
+        - ``right`` - an instance of :class:`Peer`
+        
+        We favour ``left'' over ``right''. That is, if ``name``, ``email`` or ``dataX`` is set for
+        ``left, we pick this data even if these fields are set in ``right`` as well.
+        
 
         .. note::
 
            The returned object was not added to any session.
+
         """
         name = left.name
         keys = set(left.keys).union(right.keys)
@@ -60,10 +86,19 @@ class Peer(Base):
 
     @classmethod
     def from_key(cls, key):
-        """
+        """Return the peer associatied with ``key`` in the database. If no such element is found an
+        :class:`EntryNotFound` exception is raised. If more than one element is found this is
+        considered an inconsistent state of the database and a :class:`RuntimeError` exception is
+        raised.
+
+        INPUT:
+
+        - ``key`` - an instance of :class:`Key`
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)
@@ -77,10 +112,20 @@ class Peer(Base):
 
     @classmethod
     def from_name(cls, name):
-        """
+        """Return a peer with the given ``name`` from the database. If no such element is found an
+        :class:`EntryNotFound` exception is raised. If more than one element is found the "first"
+        element is returned, where "first" has no particular meaning. In this case a warning is
+        issued. In particular, no guarantee is given that two consecutive runs will yield the same
+        result if more than one peer has the provided ``name``.
+
+        INPUT:
+
+        - ``name`` - a string
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.name == name)
@@ -94,10 +139,24 @@ class Peer(Base):
 
     @classmethod
     def from_email(cls, email):
-        """
+        """Return a peer with the given ``email`` address from the database. A peer is defined to
+        have an e-mail address associated with it, if any of the keys associated with it are for
+        said e-mail address.
+
+        If no such peer is found an :class:`EntryNotFound` exception is raised. If more than one
+        element is found the "first" element is returned, where "first" has no particular
+        meaning. In this case a warning is issued. In particular, no guarantee is given that two
+        consecutive runs will yield the same result if more than one peer has the provided ``email``
+        address.
+
+        INPUT:
+
+        - ``email`` - a string
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(Peer).join(Key).filter(Key.peer_id == Peer.id, Key.email == email)
@@ -128,6 +187,7 @@ class Peer(Base):
 
     @property
     def key(self):
+        """Return the most recent active key associated with this peer."""
         keys = sorted(self.keys, reverse=True)
         for key in keys:
             if key:
@@ -136,9 +196,21 @@ class Peer(Base):
 
     @property
     def email(self):
+        """ Return the e-mail address associated to the most rcent active key associated with this peer."""
         return str(self.key.email)
         
 def merge_peers(left, right):
+    """Wrapper around :function:`Peer.merge` which modifies the master session.
+
+    :function:`Peer.merge` does not modify the master session in any way, but this function deletes
+    both ``left`` and ``right`` and adds the result of :function:`Peer.merge`. This result is also
+    returned.
+
+    .. note ::
+
+         Changes to the master session are not committed.
+
+    """
     from batzenca.session import session
     if isinstance(left, int):
         left = session.db_session.query(Peer).filter(Peer.id == left)
