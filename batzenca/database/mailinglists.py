@@ -28,7 +28,7 @@ class MailingList(Base):
         self.policy = policy
         self.description = unicode(description)
         self.key_update_msg = unicode(key_update_msg)
-        self.new_member_msg = unicode(key_update_msg)
+        self.new_member_msg = unicode(new_member_msg)
 
     @classmethod
     def from_name(cls, name):
