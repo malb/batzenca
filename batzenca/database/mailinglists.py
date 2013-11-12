@@ -60,4 +60,4 @@ class MailingList(Base):
                 raise ValueError("Cannot inherit from release '%s' because it is for '%s' instead of '%s'."%(inherit, inherit.mailinglist, self))
             return inherit.inherit(date=date, deactivate_invalid=deactivate_invalid, delete_old_inactive_keys=delete_old_inactive_keys)
         else:
-            return Release(mailinglist=self, date=date, keys=[], policy=self.policy)
+            return Release(mailinglist=self, date=date, active_keys=[], inactive_keys=[], policy=self.policy)
