@@ -1,3 +1,8 @@
+"""
+Keys represent PGP keys.
+
+AUTHOR: Martin Albrecht <martinralbrecht+batzenca@googlemail.com>
+"""
 from base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -6,9 +11,12 @@ import datetime
 import warnings
 
 class Key(Base):
-    """
-    """
+    """This class represents a PGP key. Distributing these keys for mailing lists is the purpose of
+    this software package. It is also a design goal of this software package that the
+    particularities of dealing with the GnuPG backend are hidden behind the functions of this
+    class.
 
+    """
     __tablename__ = 'keys'
 
     id        = Column(Integer, primary_key=True)           # database id
@@ -20,8 +28,26 @@ class Key(Base):
 
     releases    = association_proxy('release_associations', 'release')
     
-    def __init__(self, kid, name=None, email=None, timestamp=None):
-        self.kid = "0x%016x"%kid
+    def __init__(self, keyid, name=None, email=None, timestamp=None):
+        """Create a new instance of :class:`Key`.
+
+        INPUT:
+
+        - ``keyid`` - a key id as an integer
+        - ``name`` - a username, if ``None`` is given, then it is read from GnuPG
+        - ``email`` - an e-mail address, if ``None`` is given, then it is read from GnuPG
+        - ``timestamp`` - the timestamp when this key was created, if ``None`` is given, then it is
+          read from GnuPG.
+
+        .. note::
+        
+            The returned object was not added to any session.
+        """
+        try:
+            keyid = "0x%016x"%keyid
+        except TypeError:
+            pass
+        self.kid = keyid
 
         from batzenca.session import session
         if not session.gnupg.key_exists(self.kid):
@@ -39,34 +65,50 @@ class Key(Base):
         self.timestamp = session.gnupg.key_timestamp(self.kid)
 
     @classmethod
-    def from_keyid(cls, kid):
-        """
-        Query the database for key id kid.
+    def from_keyid(cls, keyid):
+        """Return the key with ``keyid`` from the database. If no such element is found an
+        :class:`EntryNotFound` exception is raised. If more than one element is found this is
+        considered an inconsistent state of the database and a :class:`RuntimeError` exception is
+        raised.
 
         INPUT:
 
-        - ``kid`` - key id as integer or string in hexadecimal format
+        - ``keyid`` - key id as integer or string in hexadecimal format
+
+        .. note::
+
+           The returned object was aquired from the master session and lives there.
         """
         try:
-            kid = "0x%016x"%kid
+            keyid = "0x%016x"%keyid
         except TypeError:
             pass
+            
         from batzenca.session import session
-        res = session.db_session.query(cls).filter(cls.kid == kid)
+        res = session.db_session.query(cls).filter(cls.kid == keyid)
 
         if res.count() == 0:
-            raise EntryNotFound("No key with key id '%s' in database."%kid)
+            raise EntryNotFound("No key with key id '%s' in database."%keyid)
         else:
             if res.count() > 1:
-                raise RuntimeError("More than one key with key id '%s' in database."%kid)
+                raise RuntimeError("More than one key with key id '%s' in database."%keyid)
             return res.first()
 
     @classmethod
     def from_name(cls, name):
-        """
+        """Return a key with the given ``name`` from the database. If no such element is found an
+        :class:`EntryNotFound` exception is raised. If more than one element is found the "first"
+        element is returned, where "first" has no particular meaning. In this case a warning is
+        issued. In particular, no guarantee is given that two consecutive runs will yield the same
+        result if more than one key has the provided ``name``.
+
+        INPUT:
+
+        - ``name`` - a string
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was aquired from the master session and lives there.
         """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.name == name)
@@ -80,10 +122,24 @@ class Key(Base):
 
     @classmethod
     def from_email(cls, email):
-        """
+        """Return a key with the given ``email`` address from the database.
+
+        If no such key is found an :class:`EntryNotFound` exception is raised. If more than one
+        element is found the "first" element is returned, where "first" has no particular
+        meaning. In this case a warning is issued. In particular, no guarantee is given that two
+        consecutive runs will yield the same result if more than one key has the provided ``email``
+        address.
+
+        You can query the database for the most recent key matching an e-mail address you can call
+        ``Peer.from_email(email).key``.
+
+        INPUT:
+
+        - ``email`` - a string
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was aquired from the master session and lives there.
         """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.email == email)
@@ -97,11 +153,19 @@ class Key(Base):
 
     @classmethod
     def from_filename(cls, filename):
-        """
+        """Read the file ``filename`` into GnuPG and construct instances of :class:`Key` for each
+        key contained in the file ``filename``. If only one key is contained in ``filename`` then an
+        object of type :class:`Key` is returned. Otherwise, a tuple of such objects is returned.
+
+        INPUT:
+
+        - ``filename`` - a file name
+        
         .. note::
 
-           The returned object was not added to any session, any keys found in ``filename`` were
+           The returned objects were not added to any session, any keys found in ``filename`` were
            added to the GnuPG database.
+
         """
         from batzenca.session import session
 
@@ -120,11 +184,19 @@ class Key(Base):
 
     @classmethod
     def from_str(cls, ascii_data):
-        """
+        """Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of :class:`Key`
+        for each key contained in ``ascii_data``. If only one key is found then an object of type
+        :class:`Key` is returned. Otherwise, a tuple of such objects is returned.
+
+        INPUT:
+
+        - ``ascii_data`` - PGP keys in ASCII format, i.e. a string
+        
            .. note::
         
            The returned object was not added to any session, any keys found in ``ascii_data`` were
            added to the GnuPG database.
+
         """
         from batzenca.session import session
         res = session.gnupg.keys_import(ascii_data)
@@ -141,10 +213,14 @@ class Key(Base):
             return cls(int("0x"+fpr[-16:],16))
         
     def __nonzero__(self):
+        """Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
+        subkey for signing and one valid subkey for encrypting.
+        """
         from batzenca.session import session
         return session.gnupg.key_okay(self.kid)
 
     def is_expired(self):
+        """Return ``True`` if all subkeys of this key which can be used for encryption are expired."""
         from batzenca.session import session
         return session.gnupg.key_expired(self.kid)
 
