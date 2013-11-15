@@ -29,3 +29,17 @@ def plot_nkeys(mailinglists):
     plt.savefig("-".join([mailinglist.name  for mailinglist in mailinglists]) + ".pdf")
 
 
+def find_orphaned_keys():
+    from batzenca import EntryNotFound, Key, session
+    orphans = []
+    for key in session.gnupg.ctx.op_keylist_all(None, 0):
+        dbkey = None
+        for sk in key.subkeys:
+            try:            
+                dbkey = Key.from_keyid(int(sk.keyid,16))
+                break
+            except EntryNotFound:
+                pass
+        if dbkey is None:ise
+            orphans.append(Key(int(key.subkeys[0].keyid,16)))
+    return tuple(orphans)
