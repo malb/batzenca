@@ -70,7 +70,6 @@ class Peer(Base):
         .. note::
 
            The returned object was not added to any session.
-
         """
         name = left.name
         keys = set(left.keys).union(right.keys)
@@ -98,7 +97,6 @@ class Peer(Base):
         .. note::
 
            The returned object was aquired from the master session and lives there.
-
         """
         from batzenca.session import session
         res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)
