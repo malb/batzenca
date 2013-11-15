@@ -12,7 +12,7 @@ def thunderbird_rules(release):
     return content
 
     
-def plot_over_time(mailinglists):
+def plot_nkeys(mailinglists):
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
 
@@ -26,4 +26,6 @@ def plot_over_time(mailinglists):
     plt.legend(loc='upper left')
     plt.gcf().set_size_inches(20,5) 
     plt.gcf().autofmt_xdate()
-    plt.savefig(mailinglist.name + ".pdf")
+    plt.savefig("-".join([mailinglist.name  for mailinglist in mailinglists]) + ".pdf")
+
+
