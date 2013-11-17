@@ -50,7 +50,10 @@ class Key(Base):
         self.kid = keyid
 
         from batzenca.session import session
-        if not session.gnupg.key_exists(self.kid):
+
+        try:
+            _ = session.gnupg.key_get(self.kid)
+        except KeyError:
             if name is None or email is None or timestamp is None:
                 raise ValueError("The key %s does not exist in GnuPG and not enough information was provided for generating Key instance without it."%self.kid)
             self.name      = unicode(name.strip())
