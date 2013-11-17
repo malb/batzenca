@@ -1,4 +1,11 @@
 def thunderbird_rules(release):
+    """Return an XML string which matches that used by Thunderbird/Icedove to store 'per-recipient
+    rules'
+
+    INPUT:
+
+    - ``release`` - an instance of :class:`Release`
+    """
     import StringIO
     fh = StringIO.StringIO()
 
@@ -13,6 +20,14 @@ def thunderbird_rules(release):
 
     
 def plot_nkeys(mailinglists):
+    """Write a PDF file which plots the number of active keys over time in all releases of all
+    ``mailinglists``.
+
+    INPUT:
+
+    - ``mailinglists`` - a list of instances of :class:`MailingList`
+    
+    """
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
 
@@ -30,6 +45,12 @@ def plot_nkeys(mailinglists):
 
 
 def find_orphaned_keys():
+    """Find keys in the GnuPG database which do not have an instance of :class:`Key` associated with it.
+
+    This library uses two databases: the GnuPG database of keys and the database storing
+    metainformation which the user mostly works with. This function returns those keys in the GnuPG
+    database which do not have an entry in the user facing database.
+    """
     from batzenca import EntryNotFound, Key, session
     orphans = []
     for key in session.gnupg.ctx.op_keylist_all(None, 0):
@@ -40,6 +61,6 @@ def find_orphaned_keys():
                 break
             except EntryNotFound:
                 pass
-        if dbkey is None:ise
+        if dbkey is None:
             orphans.append(Key(int(key.subkeys[0].keyid,16)))
     return tuple(orphans)
