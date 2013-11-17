@@ -1,10 +1,9 @@
-import pyme
-import pyme.core
-import pyme.pygpgme
-import pyme.errors
-import pyme.constants.keylist
-import pyme.constants.sig
-import pyme.constants.status
+import gpgme
+
+try:
+    from io import BytesIO
+except ImportError:
+    from StringIO import StringIO as ByteIO
 
 from collections import namedtuple
 UID = namedtuple('UID', ['name', 'email',  'comment'])
@@ -20,12 +19,12 @@ class KeyError(Exception):
 
 class GnuPG(object):
 
-    GPGME_PK_RSA   = pyme.pygpgme.GPGME_PK_RSA  
-    GPGME_PK_RSA_E = pyme.pygpgme.GPGME_PK_RSA_E
-    GPGME_PK_RSA_S = pyme.pygpgme.GPGME_PK_RSA_S
-    GPGME_PK_ELG_E = pyme.pygpgme.GPGME_PK_ELG_E
-    GPGME_PK_DSA   = pyme.pygpgme.GPGME_PK_DSA  
-    GPGME_PK_ELG   = pyme.pygpgme.GPGME_PK_ELG
+    GPGME_PK_RSA   = gpgme.PK_RSA  
+    GPGME_PK_RSA_E = gpgme.PK_RSA_E
+    GPGME_PK_RSA_S = gpgme.PK_RSA_S
+    GPGME_PK_ELG_E = gpgme.PK_ELG_E
+    GPGME_PK_DSA   = gpgme.PK_DSA  
+    GPGME_PK_ELG   = gpgme.PK_ELG
 
     alg_to_str = { GPGME_PK_RSA  : "GPGME_PK_RSA",
                    GPGME_PK_RSA_E: "GPGME_PK_RSA_E",
@@ -44,32 +43,31 @@ class GnuPG(object):
     _key_cache = {}
 
     def __init__(self, home_dir=None):
-        pyme.core.check_version(None)
-
         self.home_dir = home_dir
+        
+
+        self.ctx = gpgme.Context()
         
         if home_dir is not None:
             if not os.path.exists(home_dir):
                 os.mkdir(home_dir)
                 os.chmod(home_dir, 0700)
 
-            for engine in pyme.core.get_engine_info():
-                pyme.core.set_engine_info(engine.protocol, engine.file_name, home_dir)
+            self.ctx.set_engine_info(gpgme.PROTOCOL_OpenPGP, None, self.home_dir)
 
-        self.ctx = pyme.core.Context()
-        self.ctx.set_keylist_mode(pyme.constants.keylist.mode.SIGS)
-        self.ctx.set_armor(1)
+        self.ctx.keylist_mode = gpgme.KEYLIST_MODE_SIGS
+        self.ctx.armor = True
 
     def key_exists(self, keyid):
         try:
             key = self.ctx.get_key(str(keyid), 0)
             return True
-        except pyme.errors.GPGMEError, e:
+        except gpgme.GpgmeError, e:
             return False
 
     def key_get(self, keyid):
-        if isinstance(keyid, pyme.pygpgme._gpgme_key):
-            return keyid
+        if isinstance(keyid, gpgme.Key):
+k            return keyid
 
         # we are caching for performance reasons
         # TODO: does anything depend on us not caching?
@@ -92,7 +90,7 @@ class GnuPG(object):
                 return key
             except AttributeError:
                 raise KeyError("Key '%s' not found."%keyid)
-        except pyme.errors.GPGMEError, e:
+        except gpgme.GpgmeError, e:
             raise KeyError("Key '%s' not found."%keyid)
 
     def have_secret_key(self, keyid):
@@ -112,12 +110,12 @@ class GnuPG(object):
                     return True
             except AttributeError:
                 return False
-        except pyme.errors.GPGMEError, e:
+        except gpgme.GpgmeError, e:
             return False
             
     def key_uid(self, keyid):
         uids = self.key_get(keyid).uids
-        return UID(unicode(uids[0].name, 'utf-8'), unicode(uids[0].email, 'utf-8'), unicode(uids[0].comment, 'utf-8'))
+        return UID(uids[0].name, uids[0].email, uids[0].comment)
 
     def key_okay(self, id):
         key = self.key_get(id)
@@ -199,24 +197,21 @@ class GnuPG(object):
             for sig in uid.signatures:
                 if sig.revoked and sig.keyid in sigs:
                     sigs.remove(sig.keyid)
-                
+
         return sigs
             
     def key_export(self, id):
-        from pyme.core import Data
-        export_keys = Data()
+        export_keys = BytesIO()
         key = self.key_get(id)
-        self.ctx.op_export(key.subkeys[0].fpr, 0, export_keys)
-        export_keys.seek(0,0)
-        return export_keys.read()
+        self.ctx.export(key.subkeys[0].fpr, 0, export_keys)
+        return export_keys.get_value()
 
     def keys_export(self, ids):
-        from pyme.core import Data
-        export_keys = Data()
+        raise NotImplementedError
+        export_keys = BytesIO()
         keys = [self.key_get(id) for id in ids]
-        self.ctx.op_export_keys(keys, 0, export_keys)
-        export_keys.seek(0,0)
-        return export_keys.read()
+        self.ctx.export_keys(keys, 0, export_keys)
+        return export_keys.get_value()
 
     def msg_sign(self, msg, keyid):
         key = self.key_get(keyid)
@@ -224,17 +219,13 @@ class GnuPG(object):
         if not self.have_secret_key(keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
         
-        msg = pyme.core.Data(msg)
-        sig = pyme.core.Data()
+        msg = BytesIO(msg)
+        sig = BytesIO()
 
-        self.ctx.signers_clear()
-        self.ctx.signers_add(key)
+        self.ctx.signers = (key,)
 
-        self.ctx.op_sign(msg, sig, pyme.constants.sig.mode.DETACH)
-
-        sig.seek(0,0)
-        signedtext = sig.read()
-        return signedtext
+        self.ctx.sign(msg, sig, gpgme.SIG_MODE_DETACH)
+        return sig.get_value()
 
     def key_okay_encrypt(self, keyid):
         key = self.key_get(keyid)
@@ -249,39 +240,32 @@ class GnuPG(object):
             if  not self.key_okay(key) or not self.key_validity(key) >= 4:
                 raise ValueError("No UID of the key 0x%s has a sufficient level of validity, set always_trust=True if you want to force encryption."%key.subkeys[0].fpr[-16:])
         
-        plain = pyme.core.Data(msg)
-        cipher = pyme.core.Data()
-        flags = pyme.constants.ENCRYPT_NO_ENCRYPT_TO
+        plain = BytesIO(msg)
+        cipher = BytesIO()
+        flags = 0 # gpgme.ENCRYPT_NO_ENCRYPT_TO is missing
         if always_trust:
-            flags |= constants.ENCRYPT_ALWAYS_TRUST
-        retval = self.ctx.op_encrypt(keys, flags, plain, cipher)
-
-        cipher.seek(0,0)
-        return cipher.read()
+            flags |= gpgme.ENCRYPT_ALWAYS_TRUST
+        retval = self.ctx.encrypt(keys, flags, plain, cipher)
+        return cipher.getvalue()
 
     def msg_decrypt(self, cipher):
-        cipher = pyme.core.Data(cipher)
-        plain  = pyme.core.Data()
+        cipher = BytesIO(cipher)
+        plain  = BytesIO()
         self.ctx.op_decrypt(cipher, plain)
-        plain.seek(0,0)
-        return plain.read()
+        return plain.getvalue()
 
     def sig_verify(self, msg, sig, is_detached=True):
-        msg = pyme.core.Data(msg)
-        sig = pyme.core.Data(sig)
+        msg = BytesIO(msg)
+        sig = BytesIO(sig)
 
         if is_detached:
-            self.ctx.op_verify(sig, msg, None)
+            result = self.ctx.verify(sig, msg, None)
         else:
-            self.ctx.op_verify(sig, None, msg)
-        result = self.ctx.op_verify_result()
+            result = self.ctx.verify(sig, None, msg)
 
-        # List results for all signatures. Status equal 0 means "Ok".
-        index = 0
         sigs = []
-
         for sign in result.signatures:
-            if (sign.summary & pyme.constants.SIGSUM_VALID) == 1:
+            if (sign.summary & gpgme.SIGSUM_VALID) == 1:
                 sigs.append( sign.fpr )
 
         return tuple(sigs)
@@ -293,7 +277,7 @@ class GnuPG(object):
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
         
-        out = pyme.core.Data()
+        out = BytesIO()
 
         helper = {
             "GET_LINE"        : {"keyedit.prompt" : ("lsign" if local else "sign", "quit")}, 
@@ -308,19 +292,17 @@ class GnuPG(object):
             "data"            : out,
         }
 
-        self.ctx.signers_clear()
-        self.ctx.signers_add(signer_key)
-        self.ctx.op_edit(key, edit_fnc, helper, out)
+        self.ctx.signers =(signer_key,)
+        self.ctx.edit(key, edit_fnc, helper, out)
         self._key_cache = {} # invalidate the cache
 
     def key_delete_signature(self, keyid, signer_keyid):
         key = self.key_get(keyid)
         signer_key = self.key_get(signer_keyid)
 
-        out = pyme.core.Data()
+        out = BytesIO()
 
         for i, uid in enumerate(key.uids):
-        
             cleaner = {
                 "GET_LINE"        : {"keyedit.prompt" : ("uid %d"%(i+1), "delsig", "save")}, 
                 "GET_BOOL"        : {"keyedit.save.okay" : "Y", "keyedit.delsig.unknown" : "Y"}, 
@@ -334,14 +316,14 @@ class GnuPG(object):
                 "skip"            : 0, 
                 "data"            : out,
             }
-            self.ctx.op_edit(key, edit_fnc, cleaner, out)
+            self.ctx.edit(key, edit_fnc, cleaner, out)
 
         self._key_cache = {} # invalidate the cache
             
     def key_set_trust(self, id, trust):
         key = self.key_get(id)
 
-        out = pyme.core.Data()
+        out = BytesIO()
 
         helper = {
             "GET_LINE"        : { "keyedit.prompt" : ("trust", "quit"), 
@@ -357,15 +339,14 @@ class GnuPG(object):
             "skip"            : 0, 
             "data"            : out,
         }
-        self.ctx.op_edit(key, edit_fnc, helper, out)
+        self.ctx.edit(key, edit_fnc, helper, out)
         self._key_cache = {} # invalidate the cache
         
     def keys_import(self, data):
         self._key_cache = {} # invalidate the cache
-        data = pyme.core.Data(data)
-        self.ctx.op_import(data)
-        res =  self.ctx.op_import_result()
-        return dict((r.fpr, r.status) for r in res.imports)
+        data = BytesIO(data)
+        result = self.ctx.import_(data)
+        return dict((r.fpr, r.status) for r in result.imports)
 
     def key_revsig(self, keyid, signer_keyid, code=4, msg=""):
         key = self.key_get(keyid)
@@ -374,7 +355,7 @@ class GnuPG(object):
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
         
-        out = pyme.core.Data()
+        out = BytesIO()
 
         msg += "\n\n"
         msg = tuple(msg.splitlines())
@@ -397,9 +378,8 @@ class GnuPG(object):
             "skip"            : 0, 
             "data"            : out,
         }
-        self.ctx.signers_clear()
-        self.ctx.signers_add(signer_key)
-        self.ctx.op_edit(key, edit_fnc, helper, out)
+        self.ctx.signers = (signer_key,)
+        self.ctx.edit(key, edit_fnc, helper, out)
         self._key_cache = {} # invalidate the cache
 
     def key_edit(self, keyid):
@@ -409,7 +389,7 @@ class GnuPG(object):
            This will open an interactive session using rawinput
         """
         key = self.key_get(keyid)
-        out = pyme.core.Data()
+        out = BytesIO()
 
         helper = {
             "GOT_IT"          : None,
@@ -420,16 +400,11 @@ class GnuPG(object):
             "skip"            : 0, 
             "data"            : out,
         }
-        self.ctx.signers_clear()
+        self.ctx.signers = tuple()
         self.ctx.op_edit(key, edit_fnc, helper, out)
         self._key_cache = {} # invalidate the cache
         
 # from pygpa
-
-stat2str = {}
-for name in dir(pyme.constants.status):
-    if not name.startswith('__') and name != "util":
-        stat2str[getattr(pyme.constants.status, name)] = name
 
 def edit_fnc(stat, args, helper):
 
