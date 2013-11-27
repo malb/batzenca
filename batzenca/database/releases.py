@@ -302,7 +302,7 @@ class Release(Base):
 
         try:
             if obj.id is None:
-                raise RuntimeError("The object '%s' was not committed to the database yet, we cannot issue queries involving its id yet."%self)
+                raise RuntimeError("The object '%s' was not committed to the database yet, we cannot issue queries involving its id yet."%obj)
         except AttributeError:
             raise TypeError("Cannot handle objects of type '%s'"%type(obj))
 
