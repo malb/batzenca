@@ -157,8 +157,7 @@ class Key(Base):
     @classmethod
     def from_filename(cls, filename):
         """Read the file ``filename`` into GnuPG and construct instances of :class:`Key` for each
-        key contained in the file ``filename``. If only one key is contained in ``filename`` then an
-        object of type :class:`Key` is returned. Otherwise, a tuple of such objects is returned.
+        key contained in the file ``filename``. A tuple of :class:`Key` objects is returned.
 
         INPUT:
 
@@ -178,18 +177,12 @@ class Key(Base):
             if len(res) == 0:
                 raise EntryNotFound("No key found in in file '%s'"%filename)
             else:
-                if len(res) == 1:
-                    fpr = res.keys()[0]
-                    return cls(int("0x"+fpr[-16:],16))
-                else:
-                    fpr = res.keys()[0]
-                    return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
+                return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
 
     @classmethod
     def from_str(cls, ascii_data):
         """Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of :class:`Key`
-        for each key contained in ``ascii_data``. If only one key is found then an object of type
-        :class:`Key` is returned. Otherwise, a tuple of such objects is returned.
+        for each key contained in ``ascii_data``. A tuple of :class:`Key` objects is returned.
 
         INPUT:
 
@@ -207,13 +200,8 @@ class Key(Base):
             cut = "\n".join(ascii_data.splitlines()[:20])
             raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
         else:
-            if len(res) == 1:
-                fpr = res.keys()[0]
-                return cls(int("0x"+fpr[-16:],16))
-            else:
-                fpr = res.keys()[0]
-                return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
-            return cls(int("0x"+fpr[-16:],16))
+            return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
+
         
     def __nonzero__(self):
         """Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
