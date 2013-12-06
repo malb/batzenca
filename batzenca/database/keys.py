@@ -177,7 +177,15 @@ class Key(Base):
             if len(res) == 0:
                 raise EntryNotFound("No key found in in file '%s'"%filename)
             else:
-                return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
+                ret = []
+                for fpr in res.keys():
+                    keyid = int("0x"+fpr[-16:],16)
+                    try:
+                        key = Key.from_keyid(keyid)
+                    except EntryNotFound:
+                        key = Key(keyid)
+                    ret.append(key)
+                return tuple(ret)
 
     @classmethod
     def from_str(cls, ascii_data):
@@ -200,7 +208,15 @@ class Key(Base):
             cut = "\n".join(ascii_data.splitlines()[:20])
             raise EntryNotFound("""No key found in in provided string\n\n%s"""%cut)
         else:
-            return tuple([cls(int("0x"+fpr[-16:],16)) for fpr in res.keys()])
+            ret = []
+            for fpr in res.keys():
+                keyid = int("0x"+fpr[-16:],16)
+                try:
+                    key = Key.from_keyid(keyid)
+                except EntryNotFound:
+                    key = Key(keyid)
+                ret.append(key)
+            return tuple(ret)
 
         
     def __nonzero__(self):
