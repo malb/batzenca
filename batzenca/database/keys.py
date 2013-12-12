@@ -1,7 +1,9 @@
 """
-Keys represent PGP keys.
+.. module:: keys
+ 
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
-AUTHOR: Martin Albrecht <martinralbrecht+batzenca@googlemail.com>
+Keys represent PGP keys and are typically stored in the database.
 """
 from base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
@@ -16,6 +18,17 @@ class Key(Base):
     particularities of dealing with the GnuPG backend are hidden behind the functions of this
     class.
 
+    INPUT:
+
+    - ``keyid`` - a key id as an integer
+    - ``name`` - a username, if ``None`` is given, then it is read from GnuPG
+    - ``email`` - an e-mail address, if ``None`` is given, then it is read from GnuPG
+    - ``timestamp`` - the timestamp when this key was created, if ``None`` is given, then it is
+      read from GnuPG.
+
+    .. note::
+
+        The returned object was not added to any session.
     """
     __tablename__ = 'keys'
 
@@ -29,20 +42,6 @@ class Key(Base):
     releases    = association_proxy('release_associations', 'release')
     
     def __init__(self, keyid, name=None, email=None, timestamp=None):
-        """Create a new instance of :class:`Key`.
-
-        INPUT:
-
-        - ``keyid`` - a key id as an integer
-        - ``name`` - a username, if ``None`` is given, then it is read from GnuPG
-        - ``email`` - an e-mail address, if ``None`` is given, then it is read from GnuPG
-        - ``timestamp`` - the timestamp when this key was created, if ``None`` is given, then it is
-          read from GnuPG.
-
-        .. note::
-        
-            The returned object was not added to any session.
-        """
         try:
             keyid = "0x%016x"%keyid
         except TypeError:
@@ -70,7 +69,7 @@ class Key(Base):
     @classmethod
     def from_keyid(cls, keyid):
         """Return the key with ``keyid`` from the database. If no such element is found an
-        :class:`EntryNotFound` exception is raised. If more than one element is found this is
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element is found this is
         considered an inconsistent state of the database and a :class:`RuntimeError` exception is
         raised.
 
@@ -100,7 +99,7 @@ class Key(Base):
     @classmethod
     def from_name(cls, name):
         """Return a key with the given ``name`` from the database. If no such element is found an
-        :class:`EntryNotFound` exception is raised. If more than one element is found the "first"
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element is found the "first"
         element is returned, where "first" has no particular meaning. In this case a warning is
         issued. In particular, no guarantee is given that two consecutive runs will yield the same
         result if more than one key has the provided ``name``.
@@ -127,14 +126,15 @@ class Key(Base):
     def from_email(cls, email):
         """Return a key with the given ``email`` address from the database.
 
-        If no such key is found an :class:`EntryNotFound` exception is raised. If more than one
-        element is found the "first" element is returned, where "first" has no particular
-        meaning. In this case a warning is issued. In particular, no guarantee is given that two
-        consecutive runs will yield the same result if more than one key has the provided ``email``
-        address.
+        If no such key is found an :class:`batzenca.database.base.EntryNotFound` exception is
+        raised. If more than one element is found the "first" element is returned, where "first" has
+        no particular meaning. In this case a warning is issued. In particular, no guarantee is
+        given that two consecutive runs will yield the same result if more than one key has the
+        provided ``email`` address.
 
-        You can query the database for the most recent key matching an e-mail address you can call
-        ``Peer.from_email(email).key``.
+        You can query the database for the most recent key matching an e-mail address you can call::
+
+            Peer.from_email(email).key
 
         INPUT:
 
@@ -143,6 +143,7 @@ class Key(Base):
         .. note::
 
            The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.email == email)
@@ -156,8 +157,9 @@ class Key(Base):
 
     @classmethod
     def from_filename(cls, filename):
-        """Read the file ``filename`` into GnuPG and construct instances of :class:`Key` for each
-        key contained in the file ``filename``. A tuple of :class:`Key` objects is returned.
+        """Read the file ``filename`` into GnuPG and construct instances of
+        :class:`batzenca.database.keys.Key` for each key contained in the file ``filename``. A tuple
+        of :class:`batzenca.database.keys.Key` objects is returned.
 
         INPUT:
 
@@ -189,14 +191,15 @@ class Key(Base):
 
     @classmethod
     def from_str(cls, ascii_data):
-        """Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of :class:`Key`
-        for each key contained in ``ascii_data``. A tuple of :class:`Key` objects is returned.
+        """Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of
+        :class:`batzenca.database.keys.Key` for each key contained in ``ascii_data``. A tuple of
+        :class:`batzenca.database.keys.Key` objects is returned.
 
         INPUT:
 
         - ``ascii_data`` - PGP keys in ASCII format, i.e. a string
         
-           .. note::
+        .. note::
         
            The returned object was not added to any session, any keys found in ``ascii_data`` were
            added to the GnuPG database.
@@ -287,7 +290,13 @@ class Key(Base):
 
     def delete_signature(self, signer):
         """
-        .. warning:
+        Delete any signature made by ``signer``.
+
+        INPUT:
+
+        - ``signer`` - an object of type :class:`batzenca.database.keys.Key`
+        
+        .. warning::
 
            This will open an interactive session using rawinput
         """

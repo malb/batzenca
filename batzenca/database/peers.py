@@ -1,7 +1,9 @@
 """
-Peers are people, typically.
+.. module:: peers
+ 
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
-AUTHOR: Martin Albrecht <martinralbrecht+batzenca@googlemail.com>
+Peers are people, typically.
 """
 from base import Base, EntryNotFound
 from keys import Key
@@ -28,12 +30,12 @@ class Peer(Base):
     data3 = Column(String)
 
     def __init__(self, name, keys, data0='', data1='', data2='', data3=''):
-        """Construct a new instance of :class:`Peer` from a given name and key (or set thereof).
+        """Construct a new instance of :class:`batzenca.database.peers.Peer` from a given name and key (or set thereof).
         
         INPUT:
 
         - ``name`` - the name of the peer (a string)
-        - ``keys`` - an instance of :class:`Key` or a list of such instances
+        - ``keys`` - an instance of :class:`batzenca.database.keys.Key` or a list of such instances
         - ``data0`` - arbitrary data as a string
         - ``data1`` - arbitrary data as a string
         - ``data2`` - arbitrary data as a string
@@ -60,11 +62,11 @@ class Peer(Base):
 
         INPUT:
 
-        - ``left`` - an instance of :class:`Peer`
-        - ``right`` - an instance of :class:`Peer`
+        - ``left`` - an instance of :class:`batzenca.database.peers.Peer`
+        - ``right`` - an instance of :class:`batzenca.database.peers.Peer`
         
-        We favour ``left'' over ``right''. That is, if ``name``, ``email`` or ``dataX`` is set for
-        ``left, we pick this data even if these fields are set in ``right`` as well.
+        We favour ``left`` over ``right``. That is, if ``name``, ``email`` or ``dataX`` is set for
+        ``left``, we pick this data even if these fields are set in ``right`` as well.
         
 
         .. note::
@@ -86,17 +88,18 @@ class Peer(Base):
     @classmethod
     def from_key(cls, key):
         """Return the peer associatied with ``key`` in the database. If no such element is found an
-        :class:`EntryNotFound` exception is raised. If more than one element is found this is
-        considered an inconsistent state of the database and a :class:`RuntimeError` exception is
-        raised.
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
+        is found this is considered an inconsistent state of the database and a
+        :class:`RuntimeError` exception is raised.
 
         INPUT:
 
-        - ``key`` - an instance of :class:`Key`
+        - ``key`` - an instance of :class:`batzenca.database.keys.Key`
         
         .. note::
 
            The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)
@@ -111,10 +114,10 @@ class Peer(Base):
     @classmethod
     def from_name(cls, name):
         """Return a peer with the given ``name`` from the database. If no such element is found an
-        :class:`EntryNotFound` exception is raised. If more than one element is found the "first"
-        element is returned, where "first" has no particular meaning. In this case a warning is
-        issued. In particular, no guarantee is given that two consecutive runs will yield the same
-        result if more than one peer has the provided ``name``.
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
+        is found the "first" element is returned, where "first" has no particular meaning. In this
+        case a warning is issued. In particular, no guarantee is given that two consecutive runs
+        will yield the same result if more than one peer has the provided ``name``.
 
         INPUT:
 
@@ -141,11 +144,11 @@ class Peer(Base):
         have an e-mail address associated with it, if any of the keys associated with it are for
         said e-mail address.
 
-        If no such peer is found an :class:`EntryNotFound` exception is raised. If more than one
-        element is found the "first" element is returned, where "first" has no particular
-        meaning. In this case a warning is issued. In particular, no guarantee is given that two
-        consecutive runs will yield the same result if more than one peer has the provided ``email``
-        address.
+        If no such peer is found an :class:`batzenca.database.base.EntryNotFound` exception is
+        raised. If more than one element is found the "first" element is returned, where "first" has
+        no particular meaning. In this case a warning is issued. In particular, no guarantee is
+        given that two consecutive runs will yield the same result if more than one peer has the
+        provided ``email`` address.
 
         INPUT:
 
@@ -198,11 +201,11 @@ class Peer(Base):
         return str(self.key.email)
         
 def merge_peers(left, right):
-    """Wrapper around :function:`Peer.merge` which modifies the master session.
+    """Wrapper around :func:`batzenca.database.peers.Peer.merge` which modifies the master session.
 
-    :function:`Peer.merge` does not modify the master session in any way, but this function deletes
-    both ``left`` and ``right`` and adds the result of :function:`Peer.merge`. This result is also
-    returned.
+    :func:`batzenca.database.peers.Peer.merge` does not modify the master session in any way, but
+    this function deletes both ``left`` and ``right`` and adds the result of
+    :func:`batzenca.database.peers.Peer.merge`. This result is also returned.
 
     .. note ::
 

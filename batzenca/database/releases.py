@@ -1,3 +1,6 @@
+"""
+Releases are bundles of objects of type :class:`Key` for a given :class:`MailingList`.
+"""
 import datetime
 
 import warnings

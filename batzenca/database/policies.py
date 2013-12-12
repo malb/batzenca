@@ -77,9 +77,11 @@ class Policy(Base):
     @classmethod
     def from_key(cls, key):
         """
+        Search the database for the policy matching the key ``key``.
+        
         .. note::
 
-           The returned object was queried from the main session and lives there.
+           The returned object was queried from the main session and lives there.        
         """
         from batzenca.session import session
         res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)

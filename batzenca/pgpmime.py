@@ -17,6 +17,8 @@ from batzenca.session import session
 
 
 class PGPMIMEsigned(MIMEMultipart):
+    """
+    """
     def __init__(self, msg=None, signer=None):
         if msg is None:
             return
