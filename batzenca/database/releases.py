@@ -189,12 +189,12 @@ class Release(Base):
         
         This function returns five iterables:
 
-            ``keys_in`` - keys that are active in this release but are not active in ``other``
-            ``keys_out`` - all keys that are either active or inactive in ``other`` but are not active
-                in this release.
-            ``peers_joined`` - peers active in this release but not in ``other``
-            ``peers_changed`` - peers that have different active keys in ``other`` and this release
-            ``peers_left`` - peers that are active in ``other`` but in this release
+        - ``keys_in`` - keys that are active in this release but are not active in ``other``
+        - ``keys_out`` - all keys that are either active or inactive in ``other`` but are not active
+          in this release.
+        - ``peers_joined`` - peers active in this release but not in ``other``
+        - ``peers_changed`` - peers that have different active keys in ``other`` and this release
+        - ``peers_left`` - peers that are active in ``other`` but in this release
 
         """
         keys_prev = set(other.active_keys + self.inactive_keys)        
