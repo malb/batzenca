@@ -176,24 +176,34 @@ class Release(Base):
         return "date: %10s, list: %10s, policy date: %10s, active keys: %3d, inactive keys: %2d (expired: %2d, not signed: %2d), total keys: %3d"%(self.date, self.mailinglist.name, self.policy.implementation_date,
                                                                                                                                                    len(self.active_keys), len(self.inactive_keys), inact_expired, inact_no_sig, len(self.keys))
 
-    def print_active_keys(self):
-        for key in sorted(self.active_keys):
-            print key
-
-    def dump_keys(self):
+    @property
+    def ascii_keys(self):
+        """All active keys in this release as OpenPGP ASCII text"""
         from batzenca.session import session
-        data = session.gnupg.keys_export(self.keys)
-        return data.read()
+        return session.gnupg.keys_export([key.kid for key in self.keys])
 
     def diff(self, other):
+        """Compare this release with ``other``.
+
+        :param batzenca.database.releases.Release other: the release to compare against
+        
+        This function returns five iterables:
+
+            ``keys_in`` - keys that are active in this release but are not active in ``other``
+            ``keys_out`` - all keys that are either active or inactive in ``other`` but are not active
+                in this release.
+            ``peers_joined`` - peers active in this release but not in ``other``
+            ``peers_changed`` - peers that have different active keys in ``other`` and this release
+            ``peers_left`` - peers that are active in ``other`` but in this release
+
+        """
         keys_prev = set(other.active_keys + self.inactive_keys)        
         keys_curr = set(self.active_keys) # keys that are in this release
 
         # keys that used to be in but are not any more
         keys_out = keys_prev.difference(keys_curr)
         # keys that are new
-        keys_in  = keys_curr.difference(keys_prev)
-
+        keys_in  = keys_curr.difference(other.active_keys)
         
         peers_prev = set([Peer.from_key(key) for key in other.active_keys])
         peers_curr = set([Peer.from_key(key) for key in keys_curr])
@@ -250,10 +260,8 @@ class Release(Base):
                                                      peers_in      = peers_joined,
                                                      peers_changed = peers_changed,
                                                      peers_out     = peers_left)
-        from batzenca.session import session
-        keys = session.gnupg.keys_export( [key.kid for key in self.keys] )
 
-        return msg, keys
+        return msg, self.ascii_keys
 
     @property
     def active_keys(self):
