@@ -42,12 +42,11 @@ class MailingList(Base):
                 warnings.warn("More than one mailinglist with name '%s' found, picking first one."%name)
             return res.first()
                 
-    def add_release(self, release):
-        assert(release.mailinglist is self)
-        self.releases.append(release)
-
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def current_release(self):
