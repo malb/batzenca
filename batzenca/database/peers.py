@@ -17,34 +17,29 @@ class Peer(Base):
     """This class represents a peer which participates in mailing lists. Typically, a peer
     represents a person which has one or many PGP keys associated with her.
 
+    :param str name: the name of the peer
+    :param keys: an instance of :class:`batzenca.database.keys.Key` or a list of such instances
+    :param str data0: arbitrary data
+    :param str data1: arbitrary data
+    :param str data2: arbitrary data
+    :param str data3: arbitrary data
+
+    .. note::
+
+       The returned object was not added to any session.
     """
     __tablename__ = 'peers'
 
-    id    = Column(Integer, primary_key=True)
-    name  = Column(String, nullable=False)
-    keys  = relationship('Key', backref=backref('peer'), order_by=Key.timestamp)
+    id    = Column(Integer, primary_key=True) #: database id
+    name  = Column(String, nullable=False) #: the peer's name
+    keys  = relationship('Key', backref=backref('peer'), order_by=Key.timestamp) #: a list of all keys associated with this peer
 
-    data0 = Column(String)
-    data1 = Column(String)
-    data2 = Column(String)
-    data3 = Column(String)
+    data0 = Column(String) #: free form data associated with this peer
+    data1 = Column(String) #: free form data associated with this peer
+    data2 = Column(String) #: free form data associated with this peer
+    data3 = Column(String) #: free form data associated with this peer
 
     def __init__(self, name, keys, data0='', data1='', data2='', data3=''):
-        """Construct a new instance of :class:`batzenca.database.peers.Peer` from a given name and key (or set thereof).
-        
-        INPUT:
-
-        - ``name`` - the name of the peer (a string)
-        - ``keys`` - an instance of :class:`batzenca.database.keys.Key` or a list of such instances
-        - ``data0`` - arbitrary data as a string
-        - ``data1`` - arbitrary data as a string
-        - ``data2`` - arbitrary data as a string
-        - ``data3`` - arbitrary data as a string
-
-        .. note::
-
-           The returned object was not added to any session.
-        """
         self.name = name
         if isinstance(keys, Key):
             self.keys = [keys]

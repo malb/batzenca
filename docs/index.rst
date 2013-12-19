@@ -58,31 +58,35 @@ Keys
 
 .. automodule:: batzenca.database.keys
    :members:
+   :special-members:
 
 Peers
 -----
 
 .. automodule::  batzenca.database.peers
    :members:
+   :special-members:
 
 Policies
 --------
 
 .. automodule::  batzenca.database.policies
    :members:
+   :special-members:
 
 MailingLists
 ------------
 
 .. automodule::  batzenca.database.mailinglists
    :members:
-
+   :special-members:
 
 Releases
 --------
 
 .. automodule::  batzenca.database.releases
    :members:
+   :special-members:
 
 Indices and tables
 ==================

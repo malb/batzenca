@@ -27,8 +27,10 @@ class KeyError(Exception):
     pass
 
 class GnuPG(object):
-    """
-    A GnuPG context.
+    """A GnuPG context.
+
+    :param str home_dir: specifiy ``GNUPGHOME``, if ``None`` an implementation default is used.
+
     """
     GPGME_PK_RSA   = pyme.pygpgme.GPGME_PK_RSA  
     GPGME_PK_RSA_E = pyme.pygpgme.GPGME_PK_RSA_E
@@ -58,19 +60,11 @@ class GnuPG(object):
         """
         Return ``True`` if ``subkey`` is neither revoked, expired or disabled.
 
-        INPUT:
-
-        - ``subkey`` - a PyGPGMe subkey object
+        :param subkey:  a PyGPGMe subkey object
         """
         return not (subkey.revoked or subkey.expired or subkey.disabled)
     
     def __init__(self, home_dir=None):
-        """Construct a new instance of :class:`GnuPG`
-
-        INPUT:
-
-        - ``home_dir`` - specifiy the GNUPGHOME (default: ``None``)
-        """
         pyme.core.check_version(None)
 
         self.home_dir = home_dir
@@ -90,10 +84,8 @@ class GnuPG(object):
     def key_get(self, keyid):
         """Get the key object matching ``keyid``.
         
-        INPUT:
-
-        - ``keyid`` - a 16 character string encoding an integer in hexadecimal notation or an
-          integer < 2^64
+        :param keyid: a 16 character string encoding an integer in hexadecimal notation or an
+            integer :math:`< 2^{64}`
         """
         if isinstance(keyid, pyme.pygpgme._gpgme_key):
             return keyid
@@ -125,10 +117,7 @@ class GnuPG(object):
     def have_secret_key(self, keyid):
         """Return ``True`` if we have the secret key for the key identified by``keyid``.
 
-        INPUT:
-
-        - ``keyid`` - a 16 character string encoding an integer in hexadecimal notation or an
-          integer < 2^64
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         try:
             try:
@@ -153,9 +142,7 @@ class GnuPG(object):
         """
         Return a named tuple ``(name,email,comment)`` with the default UID of the key ``keyid``
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         uids = self.key_get(keyid).uids
         return UID(unicode(uids[0].name, 'utf-8'), unicode(uids[0].email, 'utf-8'), unicode(uids[0].comment, 'utf-8'))
@@ -164,9 +151,7 @@ class GnuPG(object):
         """A key is "okay" if it has at least one not-expired, not-disabled, not-revoked subkey for
         both signing and encrypting.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
 
@@ -187,10 +172,7 @@ class GnuPG(object):
         A key's validity expresses the level of certainty that a given key belongs to the claimed
         UID. Where 0 is no certainty, and 5 is ultimate certainty (you own the secret key yourself).
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
-
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         return max([uid.validity for uid in key.uids])
@@ -198,9 +180,7 @@ class GnuPG(object):
     def key_pubkey_algos(self, keyid):
         """Return a tuple of public-key enryption/signature algorithms for the key ``keyid``
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         return tuple([subkey.pubkey_algo for subkey in key.subkeys if GnuPG.is_active(subkey)])
@@ -209,9 +189,7 @@ class GnuPG(object):
         """Return the nearest date when any of the expiring encryption subkeys of ``keyid`` is going
         to expire.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
     
@@ -224,9 +202,7 @@ class GnuPG(object):
     def key_expired(self, keyid):
         """Return ``True`` if the key ``keyid`` is expired.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         subkeys = [subkey for subkey in key.subkeys if (subkey.can_encrypt and not subkey.expired)]
@@ -237,10 +213,8 @@ class GnuPG(object):
     
     def key_timestamp(self, keyid):
         """Return the earliest timestamp on any of the subkeys of ``keyid``.
-
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         timestamp = min([subkey.timestamp for subkey in key.subkeys])
@@ -249,9 +223,7 @@ class GnuPG(object):
     def key_min_len(self, keyid):
         """Return the minimum key length of any of the subkeys of ``keyid``.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         return min([subkey.length for subkey in key.subkeys])
@@ -260,10 +232,9 @@ class GnuPG(object):
     def key_any_uid_is_signed_by(self, keyid, signer_keyid):
         """Return ``True`` if any uid of the key ``keyid`` is signed by the key ``signer_keyid``.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
-        - ``signer_keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
+        :param signer_keyid: the potential signer, see :func:`batzenca.gnupg.GnuPG.key_get` for
+            accepted formats.
 
         """
         key = self.key_get(keyid)
@@ -283,9 +254,7 @@ class GnuPG(object):
     def key_signatures(self, keyid):
         """Return the list of keyids which match keys that signed the key ``keyid``.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         sigs = set()
@@ -304,9 +273,7 @@ class GnuPG(object):
     def key_okay_encrypt(self, keyid):
         """Return ``True`` if the key ``keyid`` can be used for encryption.
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
         if  not self.key_okay(key) or not self.key_validity(key) >= 4:
@@ -316,9 +283,7 @@ class GnuPG(object):
     def keys_export(self, keyids):
         """Return string containing keys in list ``keyids`` in ASCII armor format
 
-        INPUT:
-
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         from pyme.core import Data
         export_keys = Data()
@@ -328,12 +293,11 @@ class GnuPG(object):
         return export_keys.read()
 
     def msg_sign(self, msg, keyid):
-        """Sign the message ``msg`` with the key ``keyid``
+        """Sign the message with the key
 
-        INPUT:
-
-        - ``msg`` - a string
-        - ``keyid`` - see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
+        :param str msg: the message
+        :param keyid: the signing key, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted
+            formats.
         """
         key = self.key_get(keyid)
 
@@ -352,13 +316,13 @@ class GnuPG(object):
         return sig.read()
     
     def msg_encrypt(self, msg, keyids, always_trust=False):
-        """Encrypt the message ``msg`` under keys in the list ``keyids``.
+        """Encrypt the message under keys in the list ``keyids``.
 
-        INPUT:
 
-        - ``msg`` - a string
-        - ``keyids`` - a list of key ids, see :func:`batzenca.gnupg.GnuPG.key_get` for details on accepted formats.
-        - ``always_trust`` - If ``False`` on keys with validity >= 4 are accepted. Otherwise, any
+
+        :param str msg: the message
+        :param iterable keyids: a list of key ids, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
+        :param boolean always_trust: If ``False`` on keys with validity :math:`>= 4` are accepted. Otherwise, any
           public key will do.
         """
         keys = [self.key_get(keyid) for keyid in keyids]
@@ -379,12 +343,9 @@ class GnuPG(object):
         return cipher.read()
 
     def msg_decrypt(self, cipher):
-        """
-        Decrypt the message ``cipher``.
+        """Decrypt a cyphertext.
 
-        INPUT:
-        
-        - ``cipher`` - a string
+        :param str cipher: the ciphertext
         """
         cipher = pyme.core.Data(cipher)
         plain  = pyme.core.Data()
@@ -399,10 +360,8 @@ class GnuPG(object):
         """Return the list of keys - represented by fingerprint strings - that signed the message
         ``msg`` in the detached signature ``sig``.
         
-        INPUT:
-
-        - ``msg`` - the message
-        - ``sig`` - the signature
+        :param str msg: the message
+        :param str sig: the signature
         """
         msg = pyme.core.Data(msg)
         sig = pyme.core.Data(sig)
@@ -418,6 +377,12 @@ class GnuPG(object):
         return tuple(sigs)
         
     def key_sign(self, keyid, signer_keyid, local=False):
+        """Sign a key.
+
+        :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param signer_keyid: the signer, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param boolean local: if ``True`` a local signature (non exportable) is created
+        """
         key = self.key_get(keyid)
         signer_key = self.key_get(signer_keyid)
 
@@ -445,6 +410,15 @@ class GnuPG(object):
         self._key_cache = {} # invalidate the cache
 
     def key_delete_signature(self, keyid, signer_keyid):
+        """Delete a specific signature from a key.
+
+        This operation is the inverse of :func:`batzenca.gnupg.GnuPG.key_sign`.
+
+        :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param signer_keyid: the signer, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted
+            formats
+
+        """
         key = self.key_get(keyid)
         signer_key = self.key_get(signer_keyid)
 
@@ -469,8 +443,14 @@ class GnuPG(object):
 
         self._key_cache = {} # invalidate the cache
             
-    def key_set_trust(self, id, trust):
-        key = self.key_get(id)
+    def key_set_trust(self, keyid, trust):
+        """Set the trustlevel of a key.
+
+        :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param int trust: an integer between 0 and 5 (inclusive).
+
+        """
+        key = self.key_get(keyid)
 
         out = pyme.core.Data()
 
@@ -492,6 +472,11 @@ class GnuPG(object):
         self._key_cache = {} # invalidate the cache
         
     def keys_import(self, data):
+        """Import the keys from data.
+
+        :param str data: PGP key data in ASCII format.
+
+        """
         self._key_cache = {} # invalidate the cache
         data = pyme.core.Data(data)
         self.ctx.op_import(data)
@@ -499,6 +484,19 @@ class GnuPG(object):
         return dict((r.fpr, r.status) for r in res.imports)
 
     def key_revsig(self, keyid, signer_keyid, code=4, msg=""):
+        """Add a revocation signature for ``signer_keyid`` to ``keyid``.
+        
+        :param keyid: the signed key, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param signer_key: the key whose signature ought to be revoked, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+        :param int code: an integer between 0 and 4 (inclusive) encoding the reason for the revocation
+        :param str msg: an optional message added to the revocation
+
+        .. note::
+        
+            This operation is not the inverse of :func:`batzenca.gnugp.GnuPG.key_sign`, but this
+            operation adds an additional revocation signature to the key revoking a previous
+            signature.
+        """
         key = self.key_get(keyid)
         signer_key = self.key_get(signer_keyid)
 
@@ -535,6 +533,10 @@ class GnuPG(object):
 
     def key_edit(self, keyid):
         """
+        Edit a key.
+        
+        :param keyid: key to edit, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
+
         .. warning:
 
            This will open an interactive session using rawinput
@@ -563,7 +565,6 @@ for name in dir(pyme.constants.status):
         stat2str[getattr(pyme.constants.status, name)] = name
 
 def edit_fnc(stat, args, helper):
-
     try:
         while True:
             helper["data"].seek(helper["skip"],0)

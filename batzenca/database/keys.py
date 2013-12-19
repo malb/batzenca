@@ -18,12 +18,10 @@ class Key(Base):
     particularities of dealing with the GnuPG backend are hidden behind the functions of this
     class.
 
-    INPUT:
-
-    - ``keyid`` - a key id as an integer
-    - ``name`` - a username, if ``None`` is given, then it is read from GnuPG
-    - ``email`` - an e-mail address, if ``None`` is given, then it is read from GnuPG
-    - ``timestamp`` - the timestamp when this key was created, if ``None`` is given, then it is
+    :param int keyid: a key id as an integer
+    :param str name: a username, if ``None`` is given, then it is read from GnuPG
+    :param str email: an e-mail address, if ``None`` is given, then it is read from GnuPG
+    :param timestamp: the timestamp when this key was created, if ``None`` is given, then it is
       read from GnuPG.
 
     .. note::
@@ -32,14 +30,14 @@ class Key(Base):
     """
     __tablename__ = 'keys'
 
-    id        = Column(Integer, primary_key=True)           # database id
-    kid       = Column(String, nullable=False, unique=True) # 8 byte pgp key id of the form 0x0123456789abcdef
-    name      = Column(String)                              # user id
-    email     = Column(String)                              # email as stored in key
-    timestamp = Column(Date)                                # date it was added to the database
-    peer_id   = Column(Integer, ForeignKey("peers.id"))     # points to the peer this key belongs to
+    id        = Column(Integer, primary_key=True)           #: database id
+    kid       = Column(String, nullable=False, unique=True) #: 8 byte pgp key id of the form 0x0123456789abcdef
+    name      = Column(String)                              #: user id
+    email     = Column(String)                              #: email as stored in key
+    timestamp = Column(Date)                                #: date it was added to the database
+    peer_id   = Column(Integer, ForeignKey("peers.id"))
 
-    releases    = association_proxy('release_associations', 'release')
+    releases    = association_proxy('release_associations', 'release') #: a list of releases this key is in
     
     def __init__(self, keyid, name=None, email=None, timestamp=None):
         try:
@@ -73,13 +71,12 @@ class Key(Base):
         considered an inconsistent state of the database and a :class:`RuntimeError` exception is
         raised.
 
-        INPUT:
-
-        - ``keyid`` - key id as integer or string in hexadecimal format
+        :param keyid: key id as integer or string in hexadecimal format
 
         .. note::
 
            The returned object was aquired from the master session and lives there.
+
         """
         try:
             keyid = "0x%016x"%keyid
@@ -99,18 +96,17 @@ class Key(Base):
     @classmethod
     def from_name(cls, name):
         """Return a key with the given ``name`` from the database. If no such element is found an
-        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element is found the "first"
-        element is returned, where "first" has no particular meaning. In this case a warning is
-        issued. In particular, no guarantee is given that two consecutive runs will yield the same
-        result if more than one key has the provided ``name``.
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
+        is found the "first" element is returned, where "first" has no particular meaning. In this
+        case a warning is issued. In particular, no guarantee is given that two consecutive runs
+        will yield the same result if more than one key has the provided ``name``.
 
-        INPUT:
-
-        - ``name`` - a string
+        :param str name: the name the database is queried for
         
         .. note::
 
            The returned object was aquired from the master session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.name == name)
@@ -136,9 +132,7 @@ class Key(Base):
 
             Peer.from_email(email).key
 
-        INPUT:
-
-        - ``email`` - a string
+        :param str email: the email the database is queried for
         
         .. note::
 
@@ -161,9 +155,7 @@ class Key(Base):
         :class:`batzenca.database.keys.Key` for each key contained in the file ``filename``. A tuple
         of :class:`batzenca.database.keys.Key` objects is returned.
 
-        INPUT:
-
-        - ``filename`` - a file name
+        :param str filename: a file name
         
         .. note::
 
@@ -195,9 +187,7 @@ class Key(Base):
         :class:`batzenca.database.keys.Key` for each key contained in ``ascii_data``. A tuple of
         :class:`batzenca.database.keys.Key` objects is returned.
 
-        INPUT:
-
-        - ``ascii_data`` - PGP keys in ASCII format, i.e. a string
+        :param str ascii_data: PGP keys in ASCII format
         
         .. note::
         
@@ -225,12 +215,16 @@ class Key(Base):
     def __nonzero__(self):
         """Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
         subkey for signing and one valid subkey for encrypting.
+
         """
         from batzenca.session import session
         return session.gnupg.key_okay(self.kid)
 
     def is_expired(self):
-        """Return ``True`` if all subkeys of this key which can be used for encryption are expired."""
+        """Return ``True`` if all subkeys of this key which can be used for encryption are
+        expired.
+
+        """
         from batzenca.session import session
         return session.gnupg.key_expired(self.kid)
 

@@ -1,5 +1,13 @@
 """
-Based on https://pypi.python.org/pypi/pgp-mime/
+.. module:: pgpmime
+
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+
+Realises PGP/MIME signatures and encryption.
+
+.. note::
+
+    This module is based on https://pypi.python.org/pypi/pgp-mime/
 """
 from email import Message
 from email.mime.text import MIMEText
@@ -18,6 +26,10 @@ from batzenca.session import session
 
 class PGPMIMEsigned(MIMEMultipart):
     """
+    A MIME-type for PGP/MIME signed messages.
+
+    :param msg: a MIME object
+    :param batzenca.database.keys.Key signer: the signing key
     """
     def __init__(self, msg=None, signer=None):
         if msg is None:
@@ -42,6 +54,12 @@ class PGPMIMEsigned(MIMEMultipart):
             
     @classmethod
     def from_parts(cls, msg, sig):
+        """Assemble a PGP/MIME signed message from its two parts: the message and the signature,
+        both of which already properly encoded.
+
+        :param msg: a MIME encoded message :param sig: a PGP/MIME signature
+
+        """
         self = PGPMIMEsigned()
         MIMEMultipart.__init__(self, 'signed', micalg='pgp-sha1', protocol='application/pgp-signature')
         self.attach(msg)
@@ -102,6 +120,11 @@ class PGPMIMEencrypted(MIMEMultipart):
         self['Content-Disposition'] = 'attachment'
 
     def decrypt(self):
+        """
+        Decrypt this encrypted PGP/MIME message.
+
+        :return: a MIMEType object
+        """
         subparts = self.get_payload()
         assert(len(subparts) == 2)
         control, payload = subparts
@@ -119,6 +142,16 @@ class PGPMIMEencrypted(MIMEMultipart):
         return msg
         
 def PGPMIME(msg, recipients, signer):
+    """Construct a PGP/MIME signed and encrypted message from MIME message ``msg``, signed by
+    ``signer`` and encrypted for all entries of ``recipients``.
+
+    :param msg: the message to be signed and encrypted
+    :param iterable recipients: an iterable of recipients, where each entry is a
+        :class:`batzenca.database.keys.Key` object.
+    :param signer: a signing key as an object of type :class:`batzenca.database.keys.Key`
+
+    :return: a PGP/MIME encrypted message, containing a PGP/MIME signed message.
+    """
     return PGPMIMEencrypted( PGPMIMEsigned(msg, signer), recipients)
 
 def flatten(msg):

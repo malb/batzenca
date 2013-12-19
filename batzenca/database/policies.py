@@ -18,20 +18,34 @@ class PolicyViolation(Warning):
         Warning.__init__(self, msg.encode('utf8'))
 
 class Policy(Base):
-    """
-    """
+    """Releases are checked against policies.
 
+    :param str name: the name of this policy
+
+    :param implementation_date: the date this policy was implemented
+
+    :param batzenca.database.keys.Key ca: the CA key
+
+    :param int key_len: the minimum required key length
+
+    :param int key_lifespan: the maximal key lifespan in days. For example, if ``key_lifespan`` is
+        365, then a key passes if it expires within the next 365 from the point in time when it is
+        checked.
+
+    :param iterable algorithms: tuple of allowed algorithms
+
+    """
     __tablename__ = 'policies'
 
-    id                  = Column(Integer, primary_key=True)
-    name                = Column(String)
-    implementation_date = Column(Date)
+    id                  = Column(Integer, primary_key=True) #: database id
+    name                = Column(String) #: the name of this policy
+    implementation_date = Column(Date) #: the date this policy was implemented
 
-    ca                  = relationship('Key')
+    ca                  = relationship('Key') #: the CA key
     ca_id               = Column(Integer, ForeignKey('keys.id'), nullable=False)
 
-    key_len             = Column(Integer)
-    key_lifespan        = Column(Integer)
+    key_len             = Column(Integer) #: the minimum required key length
+    key_lifespan        = Column(Integer) #: the maximal key lifespan in days
     algorithms_str      = Column(String) 
 
     dead_man_switch     = Column(Boolean)
@@ -39,23 +53,6 @@ class Policy(Base):
     description         = Column(UnicodeText)
 
     def __init__(self, name, implementation_date, ca, key_len, key_lifespan, algorithms, description=None):
-        """
-        Generate a new Policy object.
-
-        name -- the name of this policy
-
-        implementation_date -- the date this policy was implemented
-
-        ca -- the CA key
-
-        key_len -- the minimum key length required
-
-        key_lifespan -- the maximal key lifespan in days. If key_lifespan is 365, then a key passes
-        if it expires within the next 365 from the point in time when it is checked.
-
-        algorithms -- tuple of allowed algorithms
-
-        """
         from batzenca.session import session
 
         self.name = name
@@ -76,12 +73,14 @@ class Policy(Base):
 
     @classmethod
     def from_key(cls, key):
-        """
-        Search the database for the policy matching the key ``key``.
+        """Search the database for the policy matching the key ``key``.
+
+        :param batzenca.database.keys.Key key: the key to query the database with
         
         .. note::
 
-           The returned object was queried from the main session and lives there.        
+           The returned object was queried from the main session and lives there.
+
         """
         from batzenca.session import session
         res = session.db_session.query(cls).join(Key).filter(Key.kid == key.kid)
@@ -95,6 +94,7 @@ class Policy(Base):
 
     @property
     def algorithms(self):
+        """the set of allowed encryption or signature algorithms"""
         from batzenca.session import session
         return set([session.gnupg.str_to_alg[e] for e in self.algorithms_str.split(",")])
 
