@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from base import Base, EntryNotFound
 from releases import Release, ReleaseKeyAssociation
 from keys import Key
+from peers import Peer
 
 import warnings
 
