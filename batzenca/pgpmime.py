@@ -67,38 +67,56 @@ class PGPMIMEsigned(MIMEMultipart):
         return self
             
     def signatures(self):
+        """Return a list of keys for which this message has valid signatures.
+
+        :return: a tuple of :class:`batzenca.database.keys.Key` objects
+
+        :todo: this should be an attribute
+        """
+        from batzenca.database.keys import Key
+        
         subparts = self.get_payload()
         assert(len(subparts) == 2)
         msg, sig = subparts
         msg_str = flatten(msg)
-        res = session.gnupg.sig_verify(msg_str, sig.get_payload())
-        return res
+        sigs = session.gnupg.sig_verify(msg_str, sig.get_payload())
+        res = []
+        for sig in sigs:
+            try:
+                key = Key.from_keyid(int(sig[-16:],16))
+            except EntryNotFound:
+                key = Key(int(sig[-16:],16))
+            res.append(key)
+        return tuple(res)
 
     def is_signed_by(self, signer):
+        """Return ``True`` if the message is signed by ``signer``
+
+        :param :class:`batzenca.database.keys.Key` signer: the potential signing key
+
+        """
         from batzenca import EntryNotFound, Key
 
         signatures = self.signatures()
             
         for sig in signatures:
             if isinstance(signer, Key):
-                try:
-                    key = Key.from_keyid(int(sig[-16:],16))
-                    if key == signer:
-                        return True
-                except EntryNotFound:
-                    pass
+                if key == signer:
+                    return True
             else:
-                try:
-                    key = Key.from_keyid(sig)
-                    if key.email == signer:
-                        return True
-                except EntryNotFound:
-                    pass
+                if key.email == signer:
+                    return True
         return False
         
 class PGPMIMEencrypted(MIMEMultipart):
-    def __init__(self, msg, recipients):
+    """
+    A MIME-type for PGP/MIME encrypted messages.
 
+    :param msg: a MIME object
+    :param iterable recipients: an iterable of recipients, where each entry is a
+        :class:`batzenca.database.keys.Key` object.
+    """
+    def __init__(self, msg, recipients):
         MIMEMultipart.__init__(self, 'encrypted', micalg='pgp-sha1', protocol='application/pgp-encrypted')
 
         body = flatten(msg)
