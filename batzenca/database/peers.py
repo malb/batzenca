@@ -55,15 +55,12 @@ class Peer(Base):
     def merge(cls, left, right):
         """Merge the two peers ``left`` and ``right`` into a new peer.
 
-        INPUT:
-
-        - ``left`` - an instance of :class:`batzenca.database.peers.Peer`
-        - ``right`` - an instance of :class:`batzenca.database.peers.Peer`
+        :param batzenca.database.peers.Peer left: first peer
+        :param batzenca.database.peers.Peer right: second peer
         
         We favour ``left`` over ``right``. That is, if ``name``, ``email`` or ``dataX`` is set for
         ``left``, we pick this data even if these fields are set in ``right`` as well.
         
-
         .. note::
 
            The returned object was not added to any session.
@@ -82,15 +79,14 @@ class Peer(Base):
 
     @classmethod
     def from_key(cls, key):
-        """Return the peer associatied with ``key`` in the database. If no such element is found an
-        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
-        is found this is considered an inconsistent state of the database and a
-        :class:`RuntimeError` exception is raised.
+        """Return the peer associatied with ``key`` in the database.
 
-        INPUT:
-
-        - ``key`` - an instance of :class:`batzenca.database.keys.Key`
+        :param batzenca.database.keys.Key key: the key to query for
         
+        :raises batzenca.database.base.EntryNotFound: when no entry is found
+        :raises RuntimeError: if more than one element is found as this is considered an
+            inconsistent state of the database
+
         .. note::
 
            The returned object was aquired from the master session and lives there.
@@ -108,16 +104,14 @@ class Peer(Base):
 
     @classmethod
     def from_name(cls, name):
-        """Return a peer with the given ``name`` from the database. If no such element is found an
-        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
-        is found the "first" element is returned, where "first" has no particular meaning. In this
-        case a warning is issued. In particular, no guarantee is given that two consecutive runs
-        will yield the same result if more than one peer has the provided ``name``.
+        """Return a peer with the given ``name`` from the database.  If more than one element is
+        found the "first" element is returned, where "first" has no particular meaning and is
+        implementation specific.  In this case a warning is issued.
 
-        INPUT:
+        :param str name: the name we are looking for
 
-        - ``name`` - a string
-        
+        :raises batzenca.database.base.EntryNotFound: when no entry is found
+
         .. note::
 
            The returned object was aquired from the master session and lives there.
@@ -139,15 +133,12 @@ class Peer(Base):
         have an e-mail address associated with it, if any of the keys associated with it are for
         said e-mail address.
 
-        If no such peer is found an :class:`batzenca.database.base.EntryNotFound` exception is
-        raised. If more than one element is found the "first" element is returned, where "first" has
-        no particular meaning. In this case a warning is issued. In particular, no guarantee is
-        given that two consecutive runs will yield the same result if more than one peer has the
-        provided ``email`` address.
+        If more than one element is found the "first" element is returned, where "first" has no
+        particular meaning and is implementation specific.  In this case a warning is issued.
 
-        INPUT:
+        :param str email: the email address we are looking for
 
-        - ``email`` - a string
+        :raises batzenca.database.base.EntryNotFound: when no entry is found
         
         .. note::
 
@@ -202,6 +193,9 @@ def merge_peers(left, right):
     this function deletes both ``left`` and ``right`` and adds the result of
     :func:`batzenca.database.peers.Peer.merge`. This result is also returned.
 
+    :param batzenca.database.peers.Peer left: the first peer
+    :param batzenca.database.peers.Peer right: the second peer
+    
     .. note ::
 
          Changes to the master session are not committed.

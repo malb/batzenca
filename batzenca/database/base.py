@@ -1,3 +1,9 @@
+"""
+.. module:: base
+ 
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+"""
+
 import datetime
 
 import sqlalchemy

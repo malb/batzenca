@@ -1,5 +1,11 @@
-"""
-Releases are bundles of objects of type :class:`Key` for a given :class:`MailingList`.
+"""Releases are bundles of objects of type :class:`batzenca.database.keys.Key` for a given
+:class:`batzenca.database.mailinglists.MailingList`. "Making releases" is what this library is
+written for.
+
+.. module:: releases
+
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+
 """
 import datetime
 
@@ -15,9 +21,6 @@ from peers import Peer
 from keys import Key
 
 class ReleaseKeyAssociation(Base):
-    """
-    """
-
     __tablename__ = 'releasekeyassociations'
 
     left_id          = Column(Integer, ForeignKey('keys.id'),     primary_key=True)
@@ -34,9 +37,19 @@ class ReleaseKeyAssociation(Base):
         self.policy_exception = policy_exception
 
 class Release(Base):
-    """
-    """
+    """Releases are bundles of objects of type :class:`batzenca.database.keys.Key`.
 
+    :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist for which this release
+        is intended
+    :param date: the date of this release
+    :param iterable active_keys: keys distributed in this release that user ought to use
+    :param iterable inactive_keys: keys which are not active in this release, yet should be
+        distributed. For example, this could include keys with revocation signatures which are
+        distributed to inform users about this revocation.
+    :param batzenca.database.policies.Policy policy: the policy against which keys in this release
+        should be checked
+
+    """
     __tablename__ = 'releases'
 
     id             = Column(Integer, primary_key=True)
@@ -69,6 +82,22 @@ class Release(Base):
 
     @classmethod
     def from_mailinglist_and_date(cls, mailinglist, date):
+        """Return the release on ``mailinglist`` for ``date`` from the database.  If more than one
+        element is found the "first" element is returned, where "first" has no particular meaning
+        and is implementation specific.  In this case a warning is issued.
+
+        
+        :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist on which the
+            target release was released
+        :param date: the date on which the target release was released
+        
+        :raises batzenca.database.base.EntryNotFound: when no entry is found
+
+        .. note::
+
+           The returned object was aquired from the master session and lives there.
+
+        """
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.mailinglist_id == mailinglist.id, cls.date == date)
 
@@ -80,6 +109,17 @@ class Release(Base):
             return res.first()
 
     def inherit(self, date=None, policy=None, deactivate_invalid=True, delete_old_inactive_keys=True):
+        """Construct a new release by inheritance from this release. Inheritance means that active
+        and inactive keys are carried forward.
+        
+        :param date: the date of this release. If ``None`` today's date is used
+        :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
+          they are expired.
+        :param boolean delete_old_inactive_keys: delete inactive keys which have been around for a
+          while, see :func:`batzenca.database.releases.Release.delete_old_inactive_keys` for
+          details
+        
+        """
         active_keys   = list(self.active_keys)
         inactive_keys = list(self.inactive_keys)
 
@@ -104,9 +144,15 @@ class Release(Base):
         return release
 
     def verify(self, ignore_exceptions=False):
+        """Check if all active keys in this release pass the policy check.
+
+        :param boolean ignore_exceptions: by default active keys with an existing policy exception
+            are ignored. If ``True`` these keys are checked as well.
+        """
         for assoc in self.key_associations:
             if assoc.is_active and (ignore_exceptions or not assoc.policy_exception):
                 self.policy.check(assoc.key)
+
     def __repr__(self):
         s = "<Release: %s, %s, %s (%s + %s) keys>"%(self.id, self.date, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
         return unicode(s).encode('utf-8')

@@ -1,3 +1,11 @@
+"""
+.. module:: mailinglists
+ 
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+
+Mailing lists is what we do the work for.
+"""
+
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, UnicodeText
 from sqlalchemy.orm import relationship
 
@@ -108,7 +116,7 @@ class MailingList(Base):
         :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
           they are expired. Only applies if ``inherit=True``
         :param boolean delete_old_inactive_keys: delete inactive keys which have been around for a
-          while, see :func:`batzenca.database.releases.Release.inherit` for details
+          while, see :func:`batzenca.database.releases.Release.delete_old_inactive_keys` for details
 
         .. note::
 
