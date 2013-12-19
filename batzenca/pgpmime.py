@@ -66,12 +66,11 @@ class PGPMIMEsigned(MIMEMultipart):
         self.attach(sig)
         return self
             
+    @property
     def signatures(self):
         """Return a list of keys for which this message has valid signatures.
 
         :return: a tuple of :class:`batzenca.database.keys.Key` objects
-
-        :todo: this should be an attribute
         """
         from batzenca.database.keys import Key
         
@@ -97,7 +96,7 @@ class PGPMIMEsigned(MIMEMultipart):
         """
         from batzenca import EntryNotFound, Key
 
-        signatures = self.signatures()
+        signatures = self.signatures
             
         for sig in signatures:
             if isinstance(signer, Key):
