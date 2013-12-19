@@ -8,7 +8,47 @@ from keys import Key
 import warnings
 
 class MailingList(Base):
-    """
+    """This class represents a mailing list. A mailing list is an object which has one or more
+    :class:`batzenca.database.releases.Release` objects associationed with it.
+
+    :param str name: the name of this mailing list.
+    :param str email: the e-mail address of this mailing list.
+
+    :param policy: an object of type :class:`batzenca.database.policies.Policy` which is applied by
+        default to releases
+
+    :param str description: an informal description of this mailing list.
+
+    :param str new_member_msg: this message ought to be sent to peers when they join the list for the
+      first time. This message could contain etiquette etc.
+
+    :param str key_update_msg: this message is sent when a new release is published. It typically
+        contains a list of all keys associated with this release. For this reason this string supports
+        a limited number of template fields which are replaced by the actual values in
+        :func:`batzenca.database.releases.Release.publish`. These fields are:
+        
+        ``{mailinglist}`` - the name of this mailing list
+        
+        ``{peers_in}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which are new
+        in the current release.
+        
+        ``{peers_changed}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which are
+        changed their keys in the current release.
+        
+        ``{peers_out}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which left the
+        mailing list in the current release.
+        
+        ``{keys_in}`` - a list of keys (printed using
+        :func:`batzenca.database.releases.Release._format_entry`) that joined the mailing list in
+        the current release.
+        
+        ``{keys_out}`` - a list of keys (printed using
+        :func:`batzenca.database.releases.Release._format_entry`) that left this mailing list in
+        the current release.
+        
+        ``{keys}`` - a complete list of keys (printed using
+        :func:`batzenca.database.releases.Release._format_entry`) in the current release.
+
     """
 
     __tablename__ = 'mailinglists'
@@ -50,9 +90,31 @@ class MailingList(Base):
 
     @property
     def current_release(self):
+        """
+        Return the current release.
+        """
         return self.releases[-1]
     
     def new_release(self, date=None, inherit=True, deactivate_invalid=True, delete_old_inactive_keys=True):
+        """Create a new release for this mailing list.
+
+        If ``inherit == True`` then :func:`batzenca.database.releases.Release.inherit` is called and
+        the remaining parameters are passed through. Otherwise a new empty release is created and no
+        parameter except for ``date`` would make sense.
+        
+        :param date: the date of this release. If ``None`` today's date is used
+        :param boolean inherit: inherit keys and policy from the currently active release
+        :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
+          they are expired. Only applies if ``inherit=True``
+        :param boolean delete_old_inactive_keys: delete inactive keys which have been around for a
+          while, see :func:`batzenca.database.releases.Release.inherit` for details
+
+        .. note::
+
+           If ``inherit == True`` the returned object was added to the main session and is
+           associated with this mailing list.
+
+        """
         if inherit is True:
             return self.current_release.inherit(date=date, deactivate_invalid=deactivate_invalid, delete_old_inactive_keys=delete_old_inactive_keys)
         elif inherit:
