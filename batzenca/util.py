@@ -19,22 +19,25 @@ def thunderbird_rules(release):
     return content
 
     
-def plot_nkeys(mailinglists):
-    """Write a PDF file which plots the number of active keys over time in all releases of all
+def plot_nkeys(mailinglists, active_only=True):
+    """Write a PDF file which plots the number of (active) keys over time in all releases for all
     ``mailinglists``.
 
-    INPUT:
+    :param iterable mailinglists: instances of :class:`batzenca.database.mailinglists.MailingList`
+    :param boolean active_only: only consider active keys; if ``False`` all keys are considered
 
-    - ``mailinglists`` - a list of instances of :class:`MailingList`
-    
     """
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
 
+    plt.clf()
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
     for mailinglist in mailinglists:
         x = [release.date for release in mailinglist.releases]
-        y = [len(release.active_keys) for release in mailinglist.releases]
+        if active_only:
+            y = [len(release.active_keys) for release in mailinglist.releases]
+        else:
+            y = [len(release.keys) for release in mailinglist.releases]
 
         plt.plot(x,y, linewidth=2.5, alpha=0.9, marker='o', label=mailinglist.name)
 
