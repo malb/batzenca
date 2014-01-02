@@ -270,6 +270,15 @@ class GnuPG(object):
                 
         return sigs
 
+    def key_fingerprint(self, keyid):
+        """Return the fingerprint.
+
+        :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
+        """
+        key = self.key_get(keyid)
+        return key.subkeys[0].fpr
+        
+
     def key_okay_encrypt(self, keyid):
         """Return ``True`` if the key ``keyid`` can be used for encryption.
 

@@ -245,6 +245,12 @@ class Key(Base):
         from batzenca.session import session
         return session.gnupg.key_expires(self.kid)
 
+    @property
+    def fingerprint(self):
+        """This key's fingerprint as a string"""
+        from batzenca.session import session
+        return session.gnupg.key_fingerprint(self.kid)
+
     def __lt__(self, other):
         return self.timestamp < other.timestamp
 
