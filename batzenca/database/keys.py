@@ -239,6 +239,9 @@ class Key(Base):
         return session.gnupg.key_min_len(self.kid)
 
     def expires(self):
+        """
+        todo: this should be a property
+        """
         from batzenca.session import session
         return session.gnupg.key_expires(self.kid)
 
