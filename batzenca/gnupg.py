@@ -402,7 +402,7 @@ class GnuPG(object):
 
         helper = {
             "GET_LINE"        : {"keyedit.prompt" : ("lsign" if local else "sign", "quit")}, 
-            "GET_BOOL"        : {"sign_uid.okay" : "Y", "keyedit.save.okay" : "Y"},
+            "GET_BOOL"        : {"sign_uid.okay" : "Y", "keyedit.save.okay" : "Y", "keyedit.sign_all.okay" : "Y"},
             "ALREADY_SIGNED"  : None,
             "GOT_IT"          : None,
             "NEED_PASSPHRASE" : None,
