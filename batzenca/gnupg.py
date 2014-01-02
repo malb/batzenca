@@ -386,7 +386,7 @@ class GnuPG(object):
         return tuple(sigs)
         
     def key_sign(self, keyid, signer_keyid, local=False):
-        """Sign a key.
+        """Sign all user IDs of a key.
 
         :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
         :param signer_keyid: the signer, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
