@@ -335,7 +335,23 @@ class Release(Base):
         return assoc.is_active
 
     def update_key_from_peer(self, peer):
-        raise NotImplementedError
+        if not peer in self:
+            raise ValueError("Peer '%s' is not in '%s'"%(peer, self))
+        if peer.key in self:
+            raise ValueError("Key '%s' of peer '%s' is already in release '%s'"%(peer.key, peer, self))
+
+        from batzenca.session import session
+        res = session.db_session.query(ReleaseKeyAssociation).join(Key).join(Peer).filter(Key.peer_id == peer.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
+
+        for assoc in res.all():
+            if not bool(assoc.key):
+                assoc.is_active = False
+            elif not assoc.key.is_signed_by(self.policy.ca):
+                assoc.is_active = False
+            else:
+                raise ValueError("Key '%s' of peer '%s' has a valid signature by CA '%s' mandated in '%s'"%(assoc.key, peer, self.policy.ca, self.policy))
+
+        self.add_key(peer.key, active=True, check=True)
 
     def add_key(self, key, active=True, check=True):
         # TODO check if peer is already in release
