@@ -205,7 +205,7 @@ class Release(Base):
         # keys that are new
         keys_in  = keys_curr.difference(other.active_keys)
         
-        peers_prev = set([Peer.from_key(key) for key in other.active_keys])
+        peers_prev = set([Peer.from_key(key) for key in keys_prev])
         peers_curr = set([Peer.from_key(key) for key in keys_curr])
         peers_in   = set([Peer.from_key(key) for key in keys_in  ])
         peers_out  = set([Peer.from_key(key) for key in keys_out ])
