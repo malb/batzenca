@@ -247,9 +247,10 @@ class Key(Base):
 
     @property
     def fingerprint(self):
-        """This key's fingerprint as a string"""
+        """This key's fingerprint as a string in groups of four."""
         from batzenca.session import session
-        return session.gnupg.key_fingerprint(self.kid)
+        s = session.gnupg.key_fingerprint(self.kid)
+        return " ".join(s[i:i+4] for i in range(0,len(s),4))
 
     def __lt__(self, other):
         return self.timestamp < other.timestamp
