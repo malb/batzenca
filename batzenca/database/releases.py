@@ -423,7 +423,10 @@ class Release(Base):
         s.append( "" )
         return "\n".join(s)
 
-    def __call__(self, previous=None, check=True, testrun=False):
+    def expiring_keys(self, days=30):
+        return tuple(key for key in self.active_keys if key.expires and key.expires < self.date + datetime.timedelta(days=days))
+        
+    def __call__(self, previous=None, check=True):
         """Return tuple representing this release as a (message, keys) pair.
 
         :param batzenca.database.releases.Release previous: the previous release, we call
@@ -431,7 +434,6 @@ class Release(Base):
             is used.
         :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
             run.
-        :param boolean testrun: if ``False`` then ``self.data`` is set today's date.
 
         :return: a tuple containing two strings. The first one is
             :attr:`batzenca.database.mailingists.MailingList.key_update_msg` with the output of
@@ -440,9 +442,6 @@ class Release(Base):
         """
         if check:
             self.verify()
-
-        if not testrun:
-            self.date = datetime.date.today()
 
         sorted_keys = lambda keys: sorted(keys, key=lambda x: x.name.lower())
             
@@ -546,12 +545,18 @@ class Release(Base):
         return tuple(M)
 
     def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None, new_peer_tolerance=180):
-        """
+        """Publish this release.
 
         .. warning:
 
-            Calls :func:`batzenca.database.releases.Release.deactivate_invalid`.
+            Calling this function may modify this release. Firstly, this function calls
+            :func:`batzenca.database.releases.Release.deactivate_invalid`. Secondly, if ``debug`` is
+            ``False``, :attr:`batzenca.database.releases.Release.date` is set to today's date.
+
         """
+        if not debug:
+            self.date = datetime.date.today()
+
         self.deactivate_invalid()
 
         if new_peer_tolerance:
