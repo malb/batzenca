@@ -58,6 +58,24 @@ class MailingList(Base):
         ``{keys}`` - a complete list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) in the current release.
 
+    :param str key_expiry_warning_msg: this message is sent when a key is about to expire, to warn
+    the user about this fact. This is string supports a limited number of template fields which are
+    replaced by the actual values in :func:`batzenca.database.releases.Release.key_expiry_message`. These
+    fields are:
+
+        ``{peer}`` - the name of the peer
+
+        ``{keyid}`` - the key id of the expiring key
+
+        ``{expiry_date}`` - the expiry date
+
+        ``{mailinglist}`` - the name of the mailing list on which the user is subscribed
+
+        ``{mailinglist_email}`` - the email address of the mailing list on which the user is
+        subscribed
+
+        ``{ca_email}`` - the CA's e-mail address
+
     """
 
     __tablename__ = 'mailinglists'
@@ -66,8 +84,10 @@ class MailingList(Base):
     name        = Column(String, unique=True, nullable=False)
     email       = Column(String)
     description = Column(UnicodeText)
-    new_member_msg = Column(UnicodeText) # the message we send to a new member
-    key_update_msg = Column(UnicodeText)
+    new_member_msg         = Column(UnicodeText) # the message we send to a new member
+    key_update_msg         = Column(UnicodeText)
+    key_expiry_warning_msg = Column(UnicodeText)
+    dead_man_switch_msg    = Column(UnicodeText)
 
     policy_id   = Column(Integer, ForeignKey('policies.id'))
     policy      = relationship("Policy")

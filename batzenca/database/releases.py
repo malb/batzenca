@@ -544,7 +544,32 @@ class Release(Base):
                 M.append( msg )
         return tuple(M)
 
-    def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None, new_peer_tolerance=180):
+    def key_expiry_messages(self, days=30, debug=False):
+        mailinglist = self.mailinglist
+        ca = self.policy.ca
+
+        from email.mime.text import MIMEText
+        from batzenca.pgpmime import PGPMIME
+
+        M = []
+        for key in self.expiring_keys(days=days):
+            body    = self.mailinglist.key_expiry_warning_msg.format(peer=key.peer.name,
+                                                                     keyid=key.kid,
+                                                                     expiry_date=key.expires,
+                                                                     mailinglist = mailinglist.name,
+                                                                     mailinglist_email = mailinglist.email,
+                                                                     ca_email = ca.email)
+            payload = MIMEText(body.encode('utf-8'),  _charset='utf-8')
+            msg = PGPMIME(payload, [key, ca], ca)
+            to = key.email if not debug else ca.email
+            msg['To']      = to
+            msg['From']    = ca.email
+            msg['Subject'] = "key expiry warning".format(mailinglist=mailinglist.name)
+            M.append( msg )
+        return tuple(M)
+        
+    def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None,
+             new_peer_tolerance=180, key_expiry_warning_days=30):
         """Publish this release.
 
         .. warning:
@@ -559,7 +584,7 @@ class Release(Base):
 
         self.deactivate_invalid()
 
-        if new_peer_tolerance:
+        if new_peer_tolerance and self.mailinglist.new_member_msg:
             messages = self.welcome_messages(tolerance=new_peer_tolerance, debug=debug)
             for msg in messages:
                 smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
@@ -567,3 +592,7 @@ class Release(Base):
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
 
+        if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
+            messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
+            for msg in messages:
+                smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
