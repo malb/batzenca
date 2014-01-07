@@ -110,7 +110,7 @@ class Release(Base):
                 warnings.warn("More than one release for mailinglist '%s' with date '%s' in database, picking first one"%(mailinglist, date))
             return res.first()
 
-    def inherit(self, date=None, policy=None, deactivate_invalid=True, delete_old_inactive_keys=True):
+    def inherit(self, date=None, policy=None, deactivate_invalid=True, delete_old_inactive_keys=5):
         """Construct a new release by inheritance from this release. Inheritance means that active
         and inactive keys are carried forward.
         
@@ -118,9 +118,10 @@ class Release(Base):
         :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
           they are expired.
         :param boolean delete_old_inactive_keys: delete inactive keys which have been around for a
-          while, see :func:`batzenca.database.releases.Release.delete_old_inactive_keys` for
-          details
-        
+          while, this parameter is passed to
+          :func:`batzenca.database.releases.Release.delete_old_inactive_keys` as
+          ``releasecount``.
+
         """
         active_keys   = list(self.active_keys)
         inactive_keys = list(self.inactive_keys)

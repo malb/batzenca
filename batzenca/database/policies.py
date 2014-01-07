@@ -58,7 +58,6 @@ class Policy(Base):
     algorithms_str      = Column(String) 
 
     dead_man_switch     = Column(Boolean)
-
     description         = Column(UnicodeText)
 
     def __init__(self, name, implementation_date, ca, key_len, key_lifespan, algorithms, description=None):
