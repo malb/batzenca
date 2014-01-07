@@ -433,5 +433,20 @@ class Release(Base):
         else:
             return None
 
-    def csv(self):
-        raise NotImplementedError
+    @property
+    def yaml(self):
+        s = []
+        s.append( "mailinglist: %s"%self.mailinglist.email )
+        s.append( "date:        %04d-%02d-%02d"%(self.date.year, self.date.month, self.date.day) )
+        s.append( "ca:          %s"%self.policy.ca.kid )
+        
+        s.append( "active keys:" )
+        for key in self.active_keys:
+            print s.append( "  - %s"%key.kid )
+        s.append( "" )
+        s.append( "inactive keys:" )
+        for key in self.inactive_keys:
+            s.append( "  - %s"%key.kid )
+        s.append( "" )
+        return "\n".join(s)
+
