@@ -300,7 +300,7 @@ class Key(Base):
 
         - ``signer`` - an object of type :class:`batzenca.database.keys.Key`
         
-        .. warning::
+        .. warning:
 
            This will open an interactive session using rawinput
         """
@@ -312,6 +312,10 @@ class Key(Base):
 
     @property
     def signatures(self):
+        """A tuple where each entry represents a key that signed this key. The entries are either
+        :class:`batzenca.database.keys.Key` objects - if the key is present in the local GnuPG key
+        store - or strings of the key id.
+        """
         from batzenca.session import session
         keyids = tuple("0x"+keyid for keyid in session.gnupg.key_signatures(self.kid))
         sigs = []
