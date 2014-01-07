@@ -327,6 +327,6 @@ class Key(Base):
         return tuple(sigs)
         
     @property
-    def _gnupg_key(self):
+    def _pyme_key(self):
         from batzenca.session import session
         return session.gnupg.key_get(self.kid)
