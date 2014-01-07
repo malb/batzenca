@@ -222,7 +222,7 @@ class Release(Base):
 
     @property
     def peers(self):
-        """All peers in this release"""
+        """All active peers in this release"""
         return tuple(Peer.from_key(key) for key in sorted(self.active_keys, key=lambda x:
                                                           x.name.lower()))
 
