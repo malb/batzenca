@@ -232,7 +232,7 @@ class Key(Base):
         return u"%s: %s <%s>"%(self.kid,self.name,self.email)
 
     def __repr__(self):
-        return "<Key: %s>"%(self.kid)
+        return "<Key: %s %s>"%(self.kid, self.email)
 
     def __len__(self):
         from batzenca.session import session
