@@ -230,17 +230,29 @@ class Release(Base):
     def _format_entry(i, key):
         return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
         
-        
-    def publish(self, previous=None, check=True, testrun=False):
+    def __call__(self, previous=None, check=True, testrun=False):
+        """Return tuple representing this release as a message, keys pair.
 
-        if not testrun:
-            self.date = datetime.date.today()
-        
-        keys = []
+        :param batzenca.database.releases.Release previous: the previous release, we call
+            :func:`batzenca.database.releases.Release.diff` on it.  if ``None`` then ``self.prev``
+            is used.
+        :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
+            run.
+        :param boolean testrun: if ``False`` then ``self.data`` is set today's date.
 
+        :return: a tuple containing two strings. The first one is
+            :attr:`batzenca.database.mailingists.MailingList.key_update_msg` with the output of
+            :class:`batzenca.database.releases.Release.diff` used to fill in its fields. The second
+            component is ``self``'s :attr:`batzenca.database.releases.Release.ascii_keys`.
+
+        """
         if check:
             self.verify()
 
+        if not testrun:
+            self.date = datetime.date.today()
+
+        keys = []
         for i,key in enumerate(sorted(self.active_keys, key=lambda x: x.name.lower())):
             keys.extend(Release._format_entry(i, key))
         keys = "\n".join(keys)
