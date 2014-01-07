@@ -228,7 +228,7 @@ class Release(Base):
 
     @staticmethod
     def _format_entry(i, key):
-            return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
+        return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
         
         
     def publish(self, previous=None, check=True, testrun=False):
