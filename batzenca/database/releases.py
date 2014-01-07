@@ -173,7 +173,7 @@ class Release(Base):
                     inact_no_sig += 1
                     continue
 
-            if key.expires() and key.expires() < self.date:
+            if key.expires and key.expires < self.date:
                 inact_expired += 1
                 continue
 

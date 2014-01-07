@@ -151,15 +151,23 @@ class Policy(Base):
         return True
 
     def check_expiration(self, key):
+        """Return ``True`` if the provided key expires within the time limit mandated by this  policy..
 
-        if not key.expires() and self.key_lifespan > 0:
+        :param batzenca.database.keys.Key key: the key to check
+
+        .. note::
+
+            This function issues a :class:`batzenca.database.policies.PolicyViolation` warning if
+            ``key``'s length is too short.
+        """
+        if not key.expires and self.key_lifespan > 0:
             msg = u"Key '%s'does not expire but expiry of %d days is mandated by '%s'."%(unicode(key), self.key_lifespan, unicode(self))
             warnings.warn(msg, PolicyViolation)
             return False
         else:
             max_expiry = datetime.date.today() + datetime.timedelta(days=self.key_lifespan)
-            if max_expiry < key.expires():
-                msg = u"Key '%s' expires on %s but max allowed expiration date is %s."%(unicode(key), key.expires(), max_expiry)
+            if max_expiry < key.expires:
+                msg = u"Key '%s' expires on %s but max allowed expiration date is %s."%(unicode(key), key.expires, max_expiry)
                 warnings.warn(msg, PolicyViolation)
                 return False
             return True
