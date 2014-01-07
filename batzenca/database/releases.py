@@ -222,7 +222,9 @@ class Release(Base):
 
     @property
     def peers(self):
-        return tuple(Peer.from_key(key) for key in sorted(self.active_keys, key=lambda x: x.name.lower()))
+        """All peers in this release"""
+        return tuple(Peer.from_key(key) for key in sorted(self.active_keys, key=lambda x:
+                                                          x.name.lower()))
 
     @staticmethod
     def _format_entry(i, key):
