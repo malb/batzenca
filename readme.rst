@@ -72,7 +72,7 @@ Alternatively, you can check out the "fixes" branch of https://bitbucket.org/mal
 
 An abandoned branch is available which attempts to switch to the newer `PyGPGME
 <https://launchpad.net/pygpgme>`_ is available `on Bitbucket
-<https://bitbucket.org/malb/gpgca-tools/branch/pygpgme>`_. It was abandoned because PyGPGME does not
+<https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned because PyGPGME does not
 provide an interface to all GPGME functions needed by batzenca.
 
 Alternatives

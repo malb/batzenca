@@ -1,6 +1,5 @@
 """Releases are bundles of objects of type :class:`batzenca.database.keys.Key` for a given
-:class:`batzenca.database.mailinglists.MailingList`. "Making releases" is what this library is
-written for.
+:class:`batzenca.database.mailinglists.MailingList`. "Making releases" is what this library is for.
 
 .. module:: releases
 
@@ -149,8 +148,10 @@ class Release(Base):
     def verify(self, ignore_exceptions=False):
         """Check if all active keys in this release pass the policy check.
 
-        :param boolean ignore_exceptions: by default active keys with an existing policy exception
-            are ignored. If ``True`` these keys are checked as well.
+        :param boolean ignore_exceptions: keys may have a policy exception which means that they
+           pass this test even though they do violate the policy. By default active keys with an
+           existing policy exception are ignored. If ``True`` these keys are checked as well.
+
         """
         for assoc in self.key_associations:
             if assoc.is_active and (ignore_exceptions or not assoc.policy_exception):
@@ -190,7 +191,7 @@ class Release(Base):
 
         :param batzenca.database.releases.Release other: the release to compare against
         
-        This function returns five iterables:
+        :return: this function returns five tuples:
 
         - ``keys_in`` - keys that are active in this release but are not active in ``other``
         - ``keys_out`` - all keys that are either active or inactive in ``other`` but are not active
@@ -299,14 +300,29 @@ class Release(Base):
         return res.first()
 
     def add_exception(self, key):
+        """Add a policy exception for the provided key.
+
+        :param batzenca.database.keys.Key key: the key for which to add the exception
+
+        """
         assoc = self._get_assoc(key)
         assoc.policy_exception = True
 
     def has_exception(self, key):
+        """Return ``True`` if the provided key has a policy exception.
+
+        :param batzenca.database.keys.Key key: the key to check
+
+        """
         assoc = self._get_assoc(key)
         return assoc.policy_exception
 
     def is_active(self, key):
+        """Return ``True`` if the provided key is active in this release,
+
+        :param batzenca.database.keys.Key key: the key to check
+
+        """
         assoc = self._get_assoc(Key)
         return assoc.is_active
 
@@ -338,8 +354,7 @@ class Release(Base):
             
         if check and active:
             self.policy.check(key)
-            
-            
+                        
         self.key_associations.append(ReleaseKeyAssociation(key=key, active=active))
 
     def __contains__(self, obj):
@@ -376,6 +391,9 @@ class Release(Base):
 
     @property
     def prev(self):
+        """
+        The previous release.
+        """
         idx = self.mailinglist.releases.index(self)
         if idx > 0:
             return self.mailinglist.releases[idx-1]
@@ -384,6 +402,12 @@ class Release(Base):
 
     @property
     def yaml(self):
+        """YAML representation of this release.
+
+        This contains the name of the database, the date of this release, the key id of the CA, all
+        key ids of active and passive keys.
+
+        """
         s = []
         s.append( "mailinglist: %s"%self.mailinglist.email )
         s.append( "date:        %04d-%02d-%02d"%(self.date.year, self.date.month, self.date.day) )

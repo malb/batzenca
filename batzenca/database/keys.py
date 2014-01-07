@@ -253,6 +253,7 @@ class Key(Base):
         return " ".join(s[i:i+4] for i in range(0,len(s),4))
 
     def __lt__(self, other):
+        """A key is smaller than another key if it is older."""
         return self.timestamp < other.timestamp
 
     def __hash__(self):
@@ -276,7 +277,6 @@ class Key(Base):
         session.gnupg.key_revsig(self.kid, signer.kid, 4, msg=reason)
 
     def is_valid(self):
-        # TODO: key_validity > ?
         from batzenca.session import session
         return bool(self) and session.gnupg.key_validity(self.kid) > 0
 
@@ -293,16 +293,14 @@ class Key(Base):
         return session.gnupg.key_edit(self.kid)
 
     def delete_signature(self, signer):
-        """
-        Delete any signature made by ``signer``.
+        """Delete all signatures made by ``signer``.
 
-        INPUT:
-
-        - ``signer`` - an object of type :class:`batzenca.database.keys.Key`
+        :param batzenca.database.keys.Key signer: - the signer for which to delete signatures.
         
         .. warning:
 
-           This will open an interactive session using rawinput
+           This may open an interactive session using rawinput
+
         """
         from batzenca.session import session
         try:

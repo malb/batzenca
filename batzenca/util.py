@@ -1,10 +1,9 @@
 def thunderbird_rules(release):
-    """Return an XML string which matches that used by Thunderbird/Icedove to store 'per-recipient
-    rules'
+    """Return an XML string which matches that used by Thunderbird/Icedove to store "per-recipient
+    rules"
 
-    INPUT:
+    :param batzenca.database.releases.Release release: the target release
 
-    - ``release`` - an instance of :class:`Release`
     """
     import StringIO
     fh = StringIO.StringIO()

@@ -11,8 +11,22 @@ from peers import Peer
 from mailinglists import MailingList
 
 class PolicyViolation(Warning):
-    """
-    We warn when a policy is violated.
+    """This warning is issued a :class:`batzenca.database.keys.Key` violates the conditions set by a
+    :class:`batzenca.database.policies.Policy`.
+
+    The default behaviour for warnings of this kind is that a message is displayed whenever it
+    occurs. This behaviour can be modified by using Python's built-in warnings module::
+
+        with warnings.catch_warnings():
+        ... warnings.simplefilter("ignore", PolicyViolation)
+        ... # do something
+
+    Alternatively, these warnings can be turned into exceptions::
+
+        with warnings.catch_warnings():
+        ... warnings.simplefilter("error", PolicyViolation)
+        ... # do something
+    
     """
     def __init__(self, msg):
         Warning.__init__(self, msg.encode('utf8'))
@@ -21,17 +35,12 @@ class Policy(Base):
     """Releases are checked against policies.
 
     :param str name: the name of this policy
-
     :param implementation_date: the date this policy was implemented
-
     :param batzenca.database.keys.Key ca: the CA key
-
     :param int key_len: the minimum required key length
-
     :param int key_lifespan: the maximal key lifespan in days. For example, if ``key_lifespan`` is
         365, then a key passes if it expires within the next 365 from the point in time when it is
         checked.
-
     :param iterable algorithms: tuple of allowed algorithms
 
     """
@@ -73,7 +82,7 @@ class Policy(Base):
 
     @classmethod
     def from_key(cls, key):
-        """Search the database for the policy matching the key ``key``.
+        """Search the database for the policy matching the key.
 
         :param batzenca.database.keys.Key key: the key to query the database with
         
@@ -94,11 +103,21 @@ class Policy(Base):
 
     @property
     def algorithms(self):
-        """the set of allowed encryption or signature algorithms"""
+        """The set of allowed encryption or signature algorithms."""
         from batzenca.session import session
         return set([session.gnupg.str_to_alg[e] for e in self.algorithms_str.split(",")])
 
     def check_length(self, key):
+        """Return ``True`` if the shortest subkey of ``key`` is shorter than the minimum key length
+        mandated by this policy.
+
+        :param batzenca.database.keys.Key key: the key to check
+
+        .. note::
+
+            This function issues a :class:`batzenca.database.policies.PolicyViolation` warning if
+            ``key``'s length is too short.
+        """
         if len(key) < self.key_len:
             msg = u"Key '%s' has key length %d but at least %d is required by '%s'."%(unicode(key), len(key), self.key_len, unicode(self))
             warnings.warn(msg, PolicyViolation)
@@ -106,6 +125,15 @@ class Policy(Base):
         return True
 
     def check_algorithms(self, key):
+        """Return ``True`` if all algorithms used by ``key`` are in the set of allowed algorithms for this policy.
+
+        :param batzenca.database.keys.Key key: the key to check
+
+        .. note::
+
+            This function issues a :class:`batzenca.database.policies.PolicyViolation` warning if
+            ``key``'s length is too short.
+        """
         from batzenca.session import session
 
         key_algorithms = set(key.algorithms)
@@ -144,6 +172,17 @@ class Policy(Base):
         return True
 
     def check(self, key, check_ca_signature=True):
+        """Check if the provided key is valid according to this policy.
+
+        This includes that it's minimum key length, used algorithms and expiration time satisfy the
+        constraints set by this policy. Furthermore, the key also must a valid signature by this
+        policy's CA unless ``check_signature`` is set to ``False``.
+
+        :param boolean check_ca_signature: if ``False`` this function does not check if the key is
+            signed by the CA's key. This might be useful when the CA decides whether to sign this
+            key depending on whether it is valid otherwise.
+
+        """
         ret = True
         ret &= self.check_length(key)
         ret &= self.check_algorithms(key)
