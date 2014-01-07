@@ -278,6 +278,8 @@ class Release(Base):
         for key in self.inactive_keys:
             if key not in old_release.active_keys:
                 delete_keys.append(key)
+            elif key.expires and key.expires < self.date:
+                delete_keys.append(key)
         for key in delete_keys:
             assoc = self._get_assoc(key)
             self.key_associations.remove(assoc)
