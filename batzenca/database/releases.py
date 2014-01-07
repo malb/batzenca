@@ -229,57 +229,6 @@ class Release(Base):
     @staticmethod
     def _format_entry(i, key):
         return (u"  %3d. %s"%(i, key), u"       %s"%key.peer)
-        
-    def __call__(self, previous=None, check=True, testrun=False):
-        """Return tuple representing this release as a message, keys pair.
-
-        :param batzenca.database.releases.Release previous: the previous release, we call
-            :func:`batzenca.database.releases.Release.diff` on it.  if ``None`` then ``self.prev``
-            is used.
-        :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
-            run.
-        :param boolean testrun: if ``False`` then ``self.data`` is set today's date.
-
-        :return: a tuple containing two strings. The first one is
-            :attr:`batzenca.database.mailingists.MailingList.key_update_msg` with the output of
-            :class:`batzenca.database.releases.Release.diff` used to fill in its fields. The second
-            component is ``self``'s :attr:`batzenca.database.releases.Release.ascii_keys`.
-
-        """
-        if check:
-            self.verify()
-
-        if not testrun:
-            self.date = datetime.date.today()
-
-        keys = []
-        for i,key in enumerate(sorted(self.active_keys, key=lambda x: x.name.lower())):
-            keys.extend(Release._format_entry(i, key))
-        keys = "\n".join(keys)
-
-        if previous is None:
-            previous = self.prev
-
-        if previous:
-            keys_in, keys_out, peers_joined, peers_changed, peers_left = self.diff(previous)
-
-            keys_in  = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(keys_in)],  tuple()))
-            keys_out = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(keys_out)], tuple()))
-
-            peers_joined  = ", ".join(peer.name for peer in peers_joined)
-            peers_changed = ", ".join(peer.name for peer in peers_changed)
-            peers_left    = ", ".join(peer.name for peer in peers_left)
-        else:
-            keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
-            
-        msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
-                                                     keys_in       = keys_in,
-                                                     keys_out      = keys_out,
-                                                     peers_in      = peers_joined,
-                                                     peers_changed = peers_changed,
-                                                     peers_out     = peers_left)
-
-        return msg, self.ascii_keys
 
     @property
     def active_keys(self):
@@ -449,4 +398,143 @@ class Release(Base):
             s.append( "  - %s"%key.kid )
         s.append( "" )
         return "\n".join(s)
+
+    def __call__(self, previous=None, check=True, testrun=False):
+        """Return tuple representing this release as a (message, keys) pair.
+
+        :param batzenca.database.releases.Release previous: the previous release, we call
+            :func:`batzenca.database.releases.Release.diff` on it.  if ``None`` then ``self.prev``
+            is used.
+        :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
+            run.
+        :param boolean testrun: if ``False`` then ``self.data`` is set today's date.
+
+        :return: a tuple containing two strings. The first one is
+            :attr:`batzenca.database.mailingists.MailingList.key_update_msg` with the output of
+            :class:`batzenca.database.releases.Release.diff` used to fill in its fields. The second
+            component is ``self``'s :attr:`batzenca.database.releases.Release.ascii_keys`.
+        """
+        if check:
+            self.verify()
+
+        if not testrun:
+            self.date = datetime.date.today()
+
+        sorted_keys = lambda keys: sorted(keys, key=lambda x: x.name.lower())
+            
+        keys = []
+        for i,key in enumerate(sorted_keys(self.active_keys)):
+            keys.extend(Release._format_entry(i, key))
+        keys = "\n".join(keys)
+
+        if previous is None:
+            previous = self.prev
+
+        if previous:
+            keys_in, keys_out, peers_joined, peers_changed, peers_left = self.diff(previous)
+
+            keys_in  = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(sorted_keys(keys_in)) ], tuple()))
+            keys_out = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(sorted_keys(keys_out))], tuple()))
+
+            peers_joined  = ", ".join(peer.name for peer in peers_joined)
+            peers_changed = ", ".join(peer.name for peer in peers_changed)
+            peers_left    = ", ".join(peer.name for peer in peers_left)
+        else:
+            keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
+            
+        msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
+                                                     keys_in       = keys_in,
+                                                     keys_out      = keys_out,
+                                                     peers_in      = peers_joined,
+                                                     peers_changed = peers_changed,
+                                                     peers_out     = peers_left)
+
+        return msg, self.ascii_keys
+
+    def release_message(self, previous=None, check=True, debug=False, attachments=None):
+        """
+        """
+        ca = self.policy.ca
+        mailinglist = self.mailinglist
+        date_str = "%04d%02d%02d"%(self.date.year, self.date.month, self.date.day)
+
+        body_, attachment_ = self(previous=previous, check=check)
+
+        from email import encoders
+        from email.mime.base import MIMEBase
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from batzenca.pgpmime import PGPMIME
+        
+        payload = MIMEMultipart()
+        payload.attach(MIMEText(body_.encode('utf-8'),  _charset='utf-8'))
+
+        attachment = MIMEBase('application', 'pgp-keys')
+        attachment.set_payload(attachment_)
+        encoders.encode_base64(attachment)
+        attachment.add_header('Content-Disposition', 'attachment', filename="%s_%s.asc"%(mailinglist.name, date_str))
+        payload.attach(attachment)
+
+        if attachments:
+            for attachment in attachments:
+                payload.attach(attachment)
+
+        msg = PGPMIME(payload, self.active_keys, ca)
+    
+        # we are being a bit paranoid and check that we didn't fuck up encryption or something
+        for key in self.active_keys:
+            assert(key.kid not in msg.as_string())
+
+        to = mailinglist.email if not debug else ca.email
+            
+        msg['To']      = to
+        msg['From']    = ca.email
+        msg['Subject'] = "KeyUpdate {date} [{mailinglist}]".format(date=date_str, mailinglist=mailinglist.name)
+
+        return msg
+        
+    def welcome_messages(self, tolerance=180, debug=False):
+        mailinglist = self.mailinglist
+        ca = self.policy.ca
+        today = datetime.date.today()
+        tolerance = today - datetime.timedelta(days=tolerance)
+
+        from email.mime.text import MIMEText
+        from batzenca.pgpmime import PGPMIME
+
+        body    = self.mailinglist.new_member_msg
+        payload = MIMEText(body.encode('utf-8'),  _charset='utf-8')
+
+        M = []
+        for peer in self.peers:
+            was_recently_active = False
+            for key in peer.keys:
+                if any(rel.date > tolerance for rel in key.releases if rel.mailinglist == self.mailinglist and rel != self):
+                    was_recently_active = True
+                    break
+            if not was_recently_active:
+                msg = PGPMIME(payload, [peer.key, ca], ca)
+                to = peer.email if not debug else ca.email
+                msg['To']      = to
+                msg['From']    = ca.email
+                msg['Subject'] = "welcome to [{mailinglist}]".format(mailinglist=mailinglist.name)
+                M.append( msg )
+        return tuple(M)
+
+    def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None, new_peer_tolerance=180):
+        """
+
+        .. warning:
+
+            Calls :func:`batzenca.database.releases.Release.deactivate_invalid`.
+        """
+        self.deactivate_invalid()
+
+        if new_peer_tolerance:
+            messages = self.welcome_messages(tolerance=new_peer_tolerance, debug=debug)
+            for msg in messages:
+                smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
+
+        msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
+        smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
 
