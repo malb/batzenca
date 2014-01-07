@@ -5,11 +5,13 @@
 
 .. automodule:: batzenca
 
-Contents
-========
-
 .. toctree::
    :maxdepth: 4
+
+Introduction
+============
+
+.. include:: ../readme.rst
 
 GnuPG Interface
 ===============

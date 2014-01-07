@@ -39,6 +39,9 @@ class ReleaseKeyAssociation(Base):
 class Release(Base):
     """Releases are bundles of objects of type :class:`batzenca.database.keys.Key`.
 
+    Releases contain active and inactive keys. The former are keys users are expected to use. The
+    latter inform the user about invalidated keys for example by revoked signatures.
+    
     :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist for which this release
         is intended
     :param date: the date of this release
@@ -178,7 +181,7 @@ class Release(Base):
 
     @property
     def ascii_keys(self):
-        """All active keys in this release as OpenPGP ASCII text"""
+        """All active and inactive keys in this release as OpenPGP ASCII text"""
         from batzenca.session import session
         return session.gnupg.keys_export([key.kid for key in self.keys])
 
@@ -254,6 +257,7 @@ class Release(Base):
             peers_left    = ", ".join(peer.name for peer in peers_left)
         else:
             keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
+            
         msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
                                                      keys_in       = keys_in,
                                                      keys_out      = keys_out,
@@ -265,6 +269,7 @@ class Release(Base):
 
     @property
     def active_keys(self):
+        """All active keys in this release."""
         if self.id is None:
             return [assoc for assoc in self.key_associations if assoc.is_active]
         from batzenca.session import session
@@ -272,12 +277,20 @@ class Release(Base):
 
     @property
     def inactive_keys(self):
+        """All inactive keys in this release."""
         if self.id is None:
             return [assoc.key for assoc in self.key_associations if not assoc.is_active]
         from batzenca.session import session
         return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
 
     def deactivate_invalid(self):
+        """Deactivate those keys which evaluate to false and those keys which are not signed by the
+        CA.
+
+        A key evaluates to false if it is expired. Keys are considered unsigned if the CA signature
+        is revoked.
+
+        """
         for assoc in self.key_associations:
             if assoc.is_active:
                 if not bool(assoc.key):
@@ -285,13 +298,13 @@ class Release(Base):
                 elif not assoc.key.is_signed_by(self.policy.ca):
                     assoc.is_active = False
 
-    def delete_old_inactive_keys(self, releasecount=True):
-        if not releasecount:
-            return
+    def delete_old_inactive_keys(self, releasecount=5):
+        """Remove those inactive keys which have been inactive for a while.
 
-        if releasecount is True:
-            releasecount = 5
+        :param boolean releasecount: the number of releases for which a key must have been inactive
+            to be removed.
 
+        """
         old_release = self
         for i in range(releasecount):
             old_release = old_release.prev
@@ -354,7 +367,6 @@ class Release(Base):
         self.add_key(peer.key, active=True, check=True)
 
     def add_key(self, key, active=True, check=True):
-        # TODO check if peer is already in release
         if key.peer is None:
             raise ValueError("Key '%s' has no peer associated"%key)
         else:
