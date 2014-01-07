@@ -418,7 +418,7 @@ class Release(Base):
         
         s.append( "active keys:" )
         for key in self.active_keys:
-            print s.append( "  - %s"%key.kid )
+            s.append( "  - %s"%key.kid )
         s.append( "" )
         s.append( "inactive keys:" )
         for key in self.inactive_keys:
