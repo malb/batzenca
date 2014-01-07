@@ -173,6 +173,15 @@ class Policy(Base):
             return True
 
     def check_ca_signature(self, key):
+        """Return ``True`` if the provided key is signed by the CA associated with this policy.
+
+        :param batzenca.database.keys.Key key: the key to check
+
+        .. note::
+
+            This function issues a :class:`batzenca.database.policies.PolicyViolation` warning if
+            ``key``'s length is too short.
+        """
         if not key.is_signed_by(self.ca):
             msg = u"No UID of Key '%s' has a valid signature of the CA key '%s'"%(unicode(key), unicode(self.ca))
             warnings.warn(msg, PolicyViolation)
