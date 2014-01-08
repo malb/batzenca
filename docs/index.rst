@@ -13,6 +13,11 @@ Introduction
 
 .. include:: ../readme.rst
 
+Example
+=======
+
+.. include:: example.rst
+
 GnuPG Interface
 ===============
 
@@ -47,11 +52,11 @@ Design
  * Newly created objects are were not added to the current session automatically. The caller is
    responsible for calling::
 
-      session.add(obj)
+      >>> session.add(obj)
 
  * To save changes to the database the caller must call::
 
-     session.commit()
+     >>> session.commit()
 
 .. autoclass:: batzenca.database.base.EntryNotFound
 

@@ -40,7 +40,9 @@ Prerequisites
 
 Batzenca relies on `PyMe <http://pyme.sourceforge.net/>`_ for talking to GnuPG. However, this
 project appears to be dead and public-key export is broken in PyMe. Hence, the following patch needs
-to be applied in order to use batzenca with PyMe::
+to be applied in order to use batzenca with PyMe
+
+.. code-block:: diff
 
     diff -r 33a2029ded81 gpgme.i
     --- a/gpgme.i	Thu Sep 12 21:16:30 2013 +0200

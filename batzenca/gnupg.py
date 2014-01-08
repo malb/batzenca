@@ -453,7 +453,7 @@ class GnuPG(object):
         self._key_cache = {} # invalidate the cache
             
     def key_set_trust(self, keyid, trust):
-        """Set the trustlevel of a key.
+        """Set the owner trust of a key.
 
         :param keyid: the signee, see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats
         :param int trust: an integer between 0 and 5 (inclusive).

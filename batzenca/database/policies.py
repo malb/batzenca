@@ -17,15 +17,15 @@ class PolicyViolation(Warning):
     The default behaviour for warnings of this kind is that a message is displayed whenever it
     occurs. This behaviour can be modified by using Python's built-in warnings module::
 
-        with warnings.catch_warnings():
-        ... warnings.simplefilter("ignore", PolicyViolation)
-        ... # do something
+        >>> with warnings.catch_warnings():
+        ...   warnings.simplefilter("ignore", PolicyViolation)
+        ...   # do something
 
     Alternatively, these warnings can be turned into exceptions::
 
-        with warnings.catch_warnings():
-        ... warnings.simplefilter("error", PolicyViolation)
-        ... # do something
+        >>> with warnings.catch_warnings():
+        ...   warnings.simplefilter("error", PolicyViolation)
+        ...   # do something
     
     """
     def __init__(self, msg):

@@ -438,10 +438,15 @@ class Release(Base):
         :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
             run.
 
+        :param boolean still_alive: if ``True`` then the field ``{dead_man_switch}`` in
+            :attr:`batzenca.database.mailinglists.MailingList.key_update_msg` is replaced by
+            :attr:`batzenca.database.mailinglists.MailingList.dead_man_switch_msg`.
+
         :return: a tuple containing two strings. The first one is
             :attr:`batzenca.database.mailingists.MailingList.key_update_msg` with the output of
             :class:`batzenca.database.releases.Release.diff` used to fill in its fields. The second
             component is ``self``'s :attr:`batzenca.database.releases.Release.ascii_keys`.
+
         """
         if check:
             self.verify()

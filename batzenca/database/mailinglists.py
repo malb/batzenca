@@ -28,40 +28,62 @@ class MailingList(Base):
 
     :param str description: an informal description of this mailing list.
 
-    :param str new_member_msg: this message ought to be sent to peers when they join the list for the
-      first time. This message could contain etiquette etc.
+    :param str new_member_msg: this message ought to be sent to peers when they join the list for
+      the first time. This message could contain etiquette etc.  This is string supports a limited
+      number of template fields which are replaced by the actual values in
+      :func:`batzenca.database.releases.Release.welcome_messages`. These fields are:
 
+        ``{peer}`` - the name of the peer
+
+        ``{mailinglist}`` - the name of this mailing list
+
+        ``{mailinglist_email}`` - the email address of the mailing list on which the user is
+        subscribed
+
+        ``{ca}`` - the CA's name
+
+        ``{ca_email}`` - the CA's e-mail address
+    
     :param str key_update_msg: this message is sent when a new release is published. It typically
-        contains a list of all keys associated with this release. For this reason this string supports
-        a limited number of template fields which are replaced by the actual values in
-        :func:`batzenca.database.releases.Release.publish`. These fields are:
+      contains a list of all keys associated with this release. For this reason this string supports
+      a limited number of template fields which are replaced by the actual values in
+      :func:`batzenca.database.releases.Release.publish`. These fields are:
         
         ``{mailinglist}`` - the name of this mailing list
         
-        ``{peers_in}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which are new
-        in the current release.
+        ``{peers_in}`` - a comma-separated list of names
+        (:class:`batzenca.database.peers.Peer.name`) which are new in the current release.
         
-        ``{peers_changed}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which are
-        changed their keys in the current release.
+        ``{peers_changed}`` - a comma-separated list of names
+        (:class:`batzenca.database.peers.Peer.name`) which are changed their keys in the current
+        release.
         
-        ``{peers_out}`` - a list of names (:class:`batzenca.database.peers.Peer.name`) which left the
-        mailing list in the current release.
+        ``{peers_out}`` - a comma-separated list of names
+        (:class:`batzenca.database.peers.Peer.name`) which left the mailing list in the current
+        release.
         
-        ``{keys_in}`` - a list of keys (printed using
+        ``{keys_in}`` - a line-break-separated list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) that joined the mailing list in
         the current release.
         
-        ``{keys_out}`` - a list of keys (printed using
-        :func:`batzenca.database.releases.Release._format_entry`) that left this mailing list in
-        the current release.
+        ``{keys_out}`` - a line-break-separated list of keys (printed using
+        :func:`batzenca.database.releases.Release._format_entry`) that left this mailing list in the
+        current release.
         
-        ``{keys}`` - a complete list of keys (printed using
+        ``{keys}`` - a complete line-break-separated list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) in the current release.
 
+        ``{ca}`` - the CA's name
+
+        ``{ca_email}`` - the CA's e-mail address
+
+        ``{dead_man_switch}`` - an optional message stating that no attempts were made to compel the
+        CA to compromise the integrity of the list.
+    
     :param str key_expiry_warning_msg: this message is sent when a key is about to expire, to warn
-    the user about this fact. This is string supports a limited number of template fields which are
-    replaced by the actual values in :func:`batzenca.database.releases.Release.key_expiry_message`. These
-    fields are:
+      the user about this fact. This is string supports a limited number of template fields which
+      are replaced by the actual values in
+      :func:`batzenca.database.releases.Release.key_expiry_message`. These fields are:
 
         ``{peer}`` - the name of the peer
 
@@ -75,6 +97,11 @@ class MailingList(Base):
         subscribed
 
         ``{ca_email}`` - the CA's e-mail address
+
+    :param str dead_man_switch_msg: this message is included in
+        :attr:`batzenca.database.mailinglists.MailingList.key_update_msg` by
+        :func:`batzenca.database.releases.Release.__call__` if the parameter ``still_alive`` is set
+        to ``True`` when calling it.
 
     """
 
@@ -157,9 +184,7 @@ class MailingList(Base):
     def __contains__(self, obj):
         """Return ``True`` if ``obj`` was ever in any release for this mailing list.
 
-        INPUT:
-
-        - ``obj`` - either an object of type :class:`batzenca.database.peers.Peer` or
+        :param obj: either an object of type :class:`batzenca.database.peers.Peer` or
           :class:`batzenca.database.keys.Key`
 
         """
