@@ -119,13 +119,15 @@ class MailingList(Base):
     policy_id   = Column(Integer, ForeignKey('policies.id'))
     policy      = relationship("Policy")
 
-    def __init__(self, name, email, policy=None, description=None,  new_member_msg=None, key_update_msg=None):
+    def __init__(self, name, email, policy=None, description=None, new_member_msg=None, key_update_msg=None, key_expiry_warning_msg=None, dead_man_switch_msg=None):
         self.name = name
         self.email = email
         self.policy = policy
         self.description = unicode(description)
         self.key_update_msg = unicode(key_update_msg)
         self.new_member_msg = unicode(new_member_msg)
+        self.key_expiry_warning_msg = unicode(key_expiry_warning_msg)
+        self.dead_man_switch_msg    = unicode(dead_man_switch_msg)
 
     @classmethod
     def from_name(cls, name):

@@ -429,7 +429,7 @@ class Release(Base):
     def expiring_keys(self, days=30):
         return tuple(key for key in self.active_keys if key.expires and key.expires < self.date + datetime.timedelta(days=days))
         
-    def __call__(self, previous=None, check=True):
+    def __call__(self, previous=None, check=True, sill_alive=False):
         """Return tuple representing this release as a (message, keys) pair.
 
         :param batzenca.database.releases.Release previous: the previous release, we call
@@ -478,7 +478,10 @@ class Release(Base):
                                                      keys_out      = keys_out,
                                                      peers_in      = peers_joined,
                                                      peers_changed = peers_changed,
-                                                     peers_out     = peers_left)
+                                                     peers_out     = peers_left,
+                                                     dead_man_switch = self.mailinglist.dead_man_switch_msg if still_alive else "",
+                                                     ca=ca.name,
+                                                     ca_email=ca.email)
 
         return msg, self.ascii_keys
 
@@ -533,8 +536,6 @@ class Release(Base):
         from email.mime.text import MIMEText
         from batzenca.pgpmime import PGPMIME
 
-        body    = self.mailinglist.new_member_msg
-        payload = MIMEText(body.encode('utf-8'),  _charset='utf-8')
 
         M = []
         for peer in self.peers:
@@ -544,6 +545,12 @@ class Release(Base):
                     was_recently_active = True
                     break
             if not was_recently_active:
+                body    = self.mailinglist.new_member_msg.format(peer=peer.name,
+                                                                 mailinglist=mailinglist.name,
+                                                                 mailinglist_email=mailinglist.email,
+                                                                 ca=ca.name,
+                                                                 ca_email=ca.email)
+                payload = MIMEText(body.encode('utf-8'),  _charset='utf-8')
                 msg = PGPMIME(payload, [peer.key, ca], ca)
                 to = peer.email if not debug else ca.email
                 msg['To']      = to
