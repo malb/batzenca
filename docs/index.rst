@@ -21,6 +21,25 @@ Example
 GnuPG Interface
 ===============
 
+Where is my Data?
+-----------------
+
+Batzenca does not interfere with your normal OpenPGP public-key or secret-key ring. Instead, it uses
+an independent GnuPG key database or keyring. By default it is located in
+``$HOME/.batzenca/gnupg``. This default can be changed by setting the environment variable
+``BATZENCADIR``. If ``BATZENCA`` is set, then the GnuPG keyring will be located in
+``$BATZENCADIR/gnupg``. The currently used home dir can be queried as follows::
+
+    >>> session.gnupg.home_dir
+
+.. note::
+
+    Changing ``session.gnupg.home_dir`` has no effect.
+
+To work with the GnuPG directly you can run::
+
+    $ gpg --homedir=$HOME/.batzenca/gnupg
+
 GnuPG
 -----
 
@@ -38,6 +57,15 @@ PGP/MIME
 
 Database
 ========
+
+Where is my Data?
+-----------------
+
+Peers, keys, policies, mailinglists and releases are stored in an `SQLite
+<https://en.wikipedia.org/wiki/SQLite>`_ database. By default it is located in
+``$HOME/.batzenca/batzenca.db``. This default can be changed by setting the environment variable
+``BATZENCADIR``. If ``BATZENCA`` is set, then the database will be located at
+``$BATZENCADIR/batzenca.db``.
 
 Design
 ------
@@ -58,38 +86,41 @@ Design
 
      >>> session.commit()
 
+EntryNotFound
+-------------
+
 .. autoclass:: batzenca.database.base.EntryNotFound
 
-Keys
-----
+Key
+---
 
 .. automodule:: batzenca.database.keys
    :members:
    :special-members:
 
-Peers
------
+Peer
+----
 
 .. automodule::  batzenca.database.peers
    :members:
    :special-members:
 
-Policies
---------
+Policy
+------
 
 .. automodule::  batzenca.database.policies
    :members:
    :special-members:
 
-MailingLists
-------------
+MailingList
+-----------
 
 .. automodule::  batzenca.database.mailinglists
    :members:
    :special-members:
 
-Releases
---------
+Release
+-------
 
 .. automodule::  batzenca.database.releases
    :members:

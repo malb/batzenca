@@ -1,3 +1,11 @@
+"""
+.. module:: policies
+
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+
+Policies specify conditions for keys to be part of releases.
+"""
+
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, UnicodeText
 from sqlalchemy.orm import relationship, backref

@@ -38,44 +38,47 @@ acceptable - for example, it might specify that keys must expire every 2 years.
 Prerequisites
 -------------
 
-Batzenca relies on `PyMe <http://pyme.sourceforge.net/>`_ for talking to GnuPG. However, this
-project appears to be dead and public-key export is broken in PyMe. Hence, the following patch needs
-to be applied in order to use batzenca with PyMe
+* Batzenca relies on `PyMe <http://pyme.sourceforge.net/>`_ for talking to GnuPG. However, this
+  project appears to be dead and public-key export is broken in PyMe. Hence, the following patch
+  needs to be applied in order to use batzenca with PyMe
 
-.. code-block:: diff
-
-    diff -r 33a2029ded81 gpgme.i
-    --- a/gpgme.i	Thu Sep 12 21:16:30 2013 +0200
-    +++ b/gpgme.i	Thu Sep 12 22:11:43 2013 +0200
-    @@ -75,11 +75,11 @@
-     }
-     %}
-     
-    -%typemap(arginit) gpgme_key_t recp[] {
-    +%typemap(arginit) gpgme_key_t [] {
-       $1 = NULL;
-     }
-     
-    -%typemap(in) gpgme_key_t recp[] {
-    +%typemap(in) gpgme_key_t [] {
-       int i, numb = 0;
-       if (!PySequence_Check($input)) {
-         PyErr_Format(PyExc_ValueError, "arg %d: Expected a list of gpgme_key_t",
-    @@ -104,7 +104,7 @@
-         $1[numb] = NULL;
+  .. code-block:: diff
+  
+      diff -r 33a2029ded81 gpgme.i
+      --- a/gpgme.i	Thu Sep 12 21:16:30 2013 +0200
+      +++ b/gpgme.i	Thu Sep 12 22:11:43 2013 +0200
+      @@ -75,11 +75,11 @@
        }
-     }
-    -%typemap(freearg) gpgme_key_t recp[] {
-    +%typemap(freearg) gpgme_key_t [] {
-       if ($1) free($1);
-     }
-     
-Alternatively, you can check out the "fixes" branch of https://bitbucket.org/malb/pyme/
+       %}
+       
+      -%typemap(arginit) gpgme_key_t recp[] {
+      +%typemap(arginit) gpgme_key_t [] {
+         $1 = NULL;
+       }
+       
+      -%typemap(in) gpgme_key_t recp[] {
+      +%typemap(in) gpgme_key_t [] {
+         int i, numb = 0;
+         if (!PySequence_Check($input)) {
+           PyErr_Format(PyExc_ValueError, "arg %d: Expected a list of gpgme_key_t",
+      @@ -104,7 +104,7 @@
+           $1[numb] = NULL;
+         }
+       }
+      -%typemap(freearg) gpgme_key_t recp[] {
+      +%typemap(freearg) gpgme_key_t [] {
+         if ($1) free($1);
+       }
+       
+  Alternatively, you can check out the "fixes" branch of https://bitbucket.org/malb/pyme/
+  
+  An abandoned branch is available which attempts to switch to the newer `PyGPGME
+  <https://launchpad.net/pygpgme>`_ is available `on Bitbucket
+  <https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned because PyGPGME does not
+  provide an interface to all GPGME functions needed by batzenca.
 
-An abandoned branch is available which attempts to switch to the newer `PyGPGME
-<https://launchpad.net/pygpgme>`_ is available `on Bitbucket
-<https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned because PyGPGME does not
-provide an interface to all GPGME functions needed by batzenca.
+* Batzenca uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
+  all metadata about keys such as users, releases, mailing lists, policies etc.
 
 Alternatives
 ------------

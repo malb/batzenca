@@ -502,7 +502,7 @@ class GnuPG(object):
 
         .. note::
         
-            This operation is not the inverse of :func:`batzenca.gnugp.GnuPG.key_sign`, but this
+            This operation is not the inverse of :func:`batzenca.gnupg.GnuPG.key_sign`, but this
             operation adds an additional revocation signature to the key revoking a previous
             signature.
         """
