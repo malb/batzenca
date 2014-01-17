@@ -429,7 +429,7 @@ class Release(Base):
     def expiring_keys(self, days=30):
         return tuple(key for key in self.active_keys if key.expires and key.expires < self.date + datetime.timedelta(days=days))
         
-    def __call__(self, previous=None, check=True, sill_alive=False):
+    def __call__(self, previous=None, check=True, still_alive=False):
         """Return tuple representing this release as a (message, keys) pair.
 
         :param batzenca.database.releases.Release previous: the previous release, we call
@@ -480,8 +480,8 @@ class Release(Base):
                                                      peers_changed = peers_changed,
                                                      peers_out     = peers_left,
                                                      dead_man_switch = self.mailinglist.dead_man_switch_msg if still_alive else "",
-                                                     ca=ca.name,
-                                                     ca_email=ca.email)
+                                                     ca=self.policy.ca.name,
+                                                     ca_email=self.policy.ca.email)
 
         return msg, self.ascii_keys
 
