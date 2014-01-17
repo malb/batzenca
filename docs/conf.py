@@ -189,7 +189,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'batzenca.tex', u'batzenca Documentation',
+  ('index', 'batzenca.tex', u'BatzenCA Documentation',
    u'Martin R. Albrecht', 'manual'),
 ]
 
@@ -219,7 +219,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'batzenca', u'batzenca Documentation',
+    ('index', 'batzenca', u'BatzenCA Documentation',
      [u'Martin R. Albrecht'], 1)
 ]
 
@@ -233,7 +233,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'batzenca', u'batzenca Documentation',
+  ('index', 'batzenca', u'BatzenCA Documentation',
    u'Martin R. Albrecht', 'batzenca', 'One line description of project.',
    'Miscellaneous'),
 ]

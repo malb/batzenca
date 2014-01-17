@@ -1,4 +1,4 @@
-Batzenca is a set of Python of classes and function that ought to make managing OpenPGP keys
+BatzenCA is a set of Python of classes and function that ought to make managing OpenPGP keys
 easier for certification authorities.
 
 User-Case
@@ -38,9 +38,9 @@ acceptable - for example, it might specify that keys must expire every 2 years.
 Prerequisites
 -------------
 
-* Batzenca relies on `PyMe <http://pyme.sourceforge.net/>`_ for talking to GnuPG. However, this
+* BatzenCA relies on `PyMe <http://pyme.sourceforge.net/>`_ for talking to GnuPG. However, this
   project appears to be dead and public-key export is broken in PyMe. Hence, the following patch
-  needs to be applied in order to use batzenca with PyMe
+  needs to be applied in order to use BatzenCA with PyMe
 
   .. code-block:: diff
   
@@ -77,7 +77,7 @@ Prerequisites
   <https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned because PyGPGME does not
   provide an interface to all GPGME functions needed by batzenca.
 
-* Batzenca uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
+* BatzenCA uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
   all metadata about keys such as users, releases, mailing lists, policies etc.
 
 Alternatives
