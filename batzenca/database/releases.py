@@ -159,7 +159,7 @@ class Release(Base):
                 self.policy.check(assoc.key)
 
     def __repr__(self):
-        s = "<Release: %s, %s, %s (%s + %s) keys>"%(self.id, self.date, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
+        s = "<Release: %s, %s (%s), %s (%s + %s) keys>"%(self.id, self.date, self.mailinglist, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
         return unicode(s).encode('utf-8')
                 
     def __str__(self):
