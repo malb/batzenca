@@ -429,7 +429,10 @@ class GnuPG(object):
 
         """
         key = self.key_get(keyid)
-        signer_key = self.key_get(signer_keyid)
+        try:
+            signer_key = self.key_get(signer_keyid)
+        except KeyError:
+            signer_key = signer_keyid
 
         out = pyme.core.Data()
 
@@ -592,8 +595,13 @@ def edit_fnc(stat, args, helper):
                     return ret
 
             if stat2str[stat] == "GET_BOOL" and args == "keyedit.delsig.valid":
-                if any(sk.keyid[2:].upper() in data for sk in helper["signer"].subkeys):
-                    return "Y"
+                try:
+                    if any(sk.keyid[2:].upper() in data for sk in helper["signer"].subkeys):
+                        return "Y"
+                except AttributeError:
+                    # for string signatures
+                    if helper["signer"][2:].upper() in data:
+                        return "Y"
                 return "N"
 
             if stat2str[stat] == "GET_BOOL" and args == "ask_revoke_sig.one":
