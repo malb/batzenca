@@ -66,3 +66,88 @@ def find_orphaned_keys():
         if dbkey is None:
             orphans.append(Key(int(key.subkeys[0].keyid,16)))
     return tuple(orphans)
+
+def import_new_key(key, peer=None):
+    """Import a new ``key`` for ``peer``.
+
+    This function does the following for all mailing lists on which the provided
+    ``peer`` is currently subscribed.
+
+    1. check if the key passes policy checks
+
+    2. revoke all signatures on the old key of the provided peer which is
+       replaced by the provided ``key``
+
+    3. sign the key with the CA key
+
+    4. create a new release if necessary
+
+    5. add the key the current release
+
+    6. delete all superfluous signatures
+    
+    :param batzenca.database.keys.Key key: the new key
+    :param batzenca.database.peers.Peer peer: the peer to use in case it cannot
+        be determined automtically
+
+    """
+    from batzenca.database import MailingList, Peer
+    
+    if peer is None:
+        peer = Peer.from_email(key.email)
+    if peer is None:
+        raise ValueError("No peer provided")
+
+    print " key:: %s"%key
+    print "peer:: %s"%peer
+    print
+
+    # 1. check
+            
+    for mailinglist in MailingList.all():
+        if peer not in mailinglist.current_release:
+            continue
+        if not mailinglist.policy.check(key, check_ca_signature=False):
+            raise ValueError("key %s does not pass policy check for %s"%(key, mailinglist))
+    
+    # 2. update peer
+
+    if peer.key:
+        for mailinglist in MailingList.all():
+            if peer not in mailinglist.current_release:
+                continue
+            if mailinglist.policy.ca in peer.key.signatures:
+                peer.key.revoke_signature(mailinglist.policy.ca)
+    key.peer = peer
+
+    # 3. update mailing lists
+
+    signatures = set([key])
+    
+    for mailinglist in MailingList.all():
+        print "#",mailinglist,"#"
+        if peer not in mailinglist.current_release:
+            print "skipping"
+            print
+            continue
+
+        key.sign(mailinglist.policy.ca)
+        signatures.add(mailinglist.policy.ca)
+        
+        if mailinglist.current_release.published:
+            _ = mailinglist.new_release()
+
+        mailinglist.current_release.deactivate_invalid()
+        if key not in mailinglist.current_release:
+            mailinglist.current_release.add_key(key)
+
+        print "done"
+        print
+        
+    for signature in set(key.signatures).difference(signatures):
+        key.delete_signature(signature)
+
+    print "signatures:"
+    for signature in key.signatures:
+        print "-",signature
+        
