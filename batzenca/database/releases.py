@@ -188,10 +188,11 @@ class Release(Base):
         from batzenca.session import session
         return session.gnupg.keys_export([key.kid for key in self.keys])
 
-    def diff(self, other):
+    def diff(self, other=None):
         """Compare this release with ``other``.
 
-        :param batzenca.database.releases.Release other: the release to compare against
+        :param batzenca.database.releases.Release other: the release to compare
+            against, if ``None`` then ``self.prev`` is chosen
         
         :return: this function returns five tuples:
 
@@ -203,6 +204,9 @@ class Release(Base):
         - ``peers_left`` - peers that are active in ``other`` but in this release
 
         """
+        if other is None:
+            other = self.prev
+        
         keys_prev = set(other.active_keys + self.inactive_keys)        
         keys_curr = set(self.active_keys) # keys that are in this release
 
