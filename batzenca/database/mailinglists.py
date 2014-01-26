@@ -139,7 +139,14 @@ class MailingList(Base):
             if res.count() > 1:
                 warnings.warn("More than one mailinglist with name '%s' found, picking first one."%name)
             return res.first()
-                
+
+    @classmethod
+    def all(cls):
+        """Return all mailing lists from the database"""
+        from batzenca import session
+        res = session.db_session.query(MailingList)
+        return tuple(res.all())
+        
     def __str__(self):
         return self.name
 
