@@ -58,6 +58,7 @@ class Release(Base):
     mailinglist_id = Column(Integer, ForeignKey('mailinglists.id'))
     mailinglist    = relationship("MailingList", backref=backref("releases", order_by="Release.date", cascade="all, delete-orphan"))
     date           = Column(Date)
+    published      = Column(Boolean)
 
     policy_id      = Column(Integer, ForeignKey('policies.id'))
     policy         = relationship("Policy")
