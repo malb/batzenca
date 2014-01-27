@@ -158,7 +158,10 @@ class MailingList(Base):
         """
         Return the current release.
         """
-        return self.releases[-1]
+        try:
+            return self.releases[-1]
+        except IndexError:
+            raise IndexError("The mailing list '%s' has no release yet."%self)
     
     def new_release(self, date=None, inherit=True, deactivate_invalid=True, delete_old_inactive_keys=5):
         """Create a new release for this mailing list.
