@@ -629,6 +629,9 @@ class Release(Base):
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
 
+        if not debug:
+            self.published = True
+        
         if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
             messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
             for msg in messages:
