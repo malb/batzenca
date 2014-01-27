@@ -83,6 +83,8 @@ class Release(Base):
         for key in inactive_keys:
             self.key_associations.append(ReleaseKeyAssociation(key=key, active=False))
 
+        self.published = False
+
     @classmethod
     def from_mailinglist_and_date(cls, mailinglist, date):
         """Return the release on ``mailinglist`` for ``date`` from the database.  If more than one
@@ -261,6 +263,9 @@ class Release(Base):
         is revoked.
 
         """
+        if self.published:
+            raise ValueError("Release '%s' is already published and should not be modified."%self)
+
         for assoc in self.key_associations:
             if assoc.is_active:
                 if not bool(assoc.key):
@@ -275,6 +280,9 @@ class Release(Base):
             to be removed.
 
         """
+        if self.published:
+            raise ValueError("Release '%s' is already published and should not be modified."%self)
+
         old_release = self
         for i in range(releasecount):
             old_release = old_release.prev
@@ -313,6 +321,9 @@ class Release(Base):
         :param batzenca.database.keys.Key key: the key for which to add the exception
 
         """
+        if self.published:
+            raise ValueError("Release '%s' is already published and should not be modified."%self)
+
         assoc = self._get_assoc(key)
         assoc.policy_exception = True
 
@@ -354,6 +365,9 @@ class Release(Base):
         self.add_key(peer.key, active=True, check=True)
 
     def add_key(self, key, active=True, check=True):
+        if self.published:
+            raise ValueError("Release '%s' is already published and should not be modified."%self)
+
         if key.peer is None:
             raise ValueError("Key '%s' has no peer associated"%key)
         else:
@@ -599,6 +613,9 @@ class Release(Base):
             ``False``, :attr:`batzenca.database.releases.Release.date` is set to today's date.
 
         """
+        if self.published:
+            raise ValueError("Release '%s' is already published"%self)
+        
         if not debug:
             self.date = datetime.date.today()
 
