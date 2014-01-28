@@ -285,7 +285,10 @@ class Release(Base):
 
         old_release = self
         for i in range(releasecount):
-            old_release = old_release.prev
+            if old_release.prev:
+                old_release = old_release.prev
+        else:
+            return
 
         delete_keys = []
         for key in self.inactive_keys:
