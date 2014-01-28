@@ -627,7 +627,8 @@ class Release(Base):
         if new_peer_tolerance and self.mailinglist.new_member_msg:
             messages = self.welcome_messages(tolerance=new_peer_tolerance, debug=debug)
             for msg in messages:
-                smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
+                # we send a copy to self
+                smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
 
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
@@ -638,4 +639,5 @@ class Release(Base):
         if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
             messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
             for msg in messages:
-                smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
+                # we send a copy to self
+                smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
