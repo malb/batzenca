@@ -112,7 +112,7 @@ def import_new_key(key, peer=None):
     
     # 2. update peer
 
-    if peer.key:
+    if peer.key and peer.key != key:
         for mailinglist in MailingList.all():
             if peer not in mailinglist.current_release:
                 continue
