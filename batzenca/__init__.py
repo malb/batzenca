@@ -11,3 +11,5 @@ from batzenca.session import session
 
 import warnings
 warnings.simplefilter("always", PolicyViolation)
+
+from batzenca.util import import_new_key
