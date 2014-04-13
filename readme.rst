@@ -80,6 +80,9 @@ Prerequisites
 * BatzenCA uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
   all metadata about keys such as users, releases, mailing lists, policies etc.
 
+* BatzenCA uses `Git <http://git-scm.com/>`_ to record the history of PGP keys
+  and the SQLite database it stores to allow easy rollbacks.
+  
 Alternatives
 ------------
 
