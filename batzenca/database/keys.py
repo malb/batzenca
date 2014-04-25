@@ -38,13 +38,17 @@ class Key(Base):
     peer_id   = Column(Integer, ForeignKey("peers.id"))
 
     releases    = association_proxy('release_associations', 'release') #: a list of releases this key is in
-    
-    def __init__(self, keyid, name=None, email=None, timestamp=None):
+
+    @staticmethod
+    def canonical_keyid(keyid):
         try:
             keyid = "0x%016x"%keyid
         except TypeError:
             pass
-        self.kid = keyid
+        return "0x%016x"%(int(keyid,16) % (1<<64))
+    
+    def __init__(self, keyid, name=None, email=None, timestamp=None):
+        self.kid = Key.canonical_keyid(keyid)
 
         from batzenca.session import session
 
@@ -64,6 +68,13 @@ class Key(Base):
         self.email = str(uid.email)
         self.timestamp = session.gnupg.key_timestamp(self.kid)
 
+        try:
+            Key.from_keyid(self.kid)
+            raise ValueError("Key with keyid '%s' already found in database."%self.kid)
+        except EntryNotFound:
+            pass
+            
+
     @classmethod
     def from_keyid(cls, keyid):
         """Return the key with ``keyid`` from the database. If no such element is found an
@@ -78,10 +89,7 @@ class Key(Base):
            The returned object was aquired from the master session and lives there.
 
         """
-        try:
-            keyid = "0x%016x"%keyid
-        except TypeError:
-            pass
+        keyid = Key.canonical_keyid(keyid)
             
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.kid == keyid)
@@ -173,7 +181,7 @@ class Key(Base):
             else:
                 ret = []
                 for fpr in res.keys():
-                    keyid = int("0x"+fpr[-16:],16)
+                    keyid = Key.canonical_keyid(int("0x"+fpr[-16:],16))
                     try:
                         key = Key.from_keyid(keyid)
                     except EntryNotFound:
@@ -203,7 +211,7 @@ class Key(Base):
         else:
             ret = []
             for fpr in res.keys():
-                keyid = int("0x"+fpr[-16:],16)
+                keyid = Key.canonical_keyid( int("0x"+fpr[-16:],16) )
                 try:
                     key = Key.from_keyid(keyid)
                 except EntryNotFound:
@@ -314,7 +322,7 @@ class Key(Base):
         store - or strings of the key id.
         """
         from batzenca.session import session
-        keyids = tuple("0x"+keyid for keyid in session.gnupg.key_signatures(self.kid))
+        keyids = tuple(Key.canonical_keyid( keyid ) for keyid in session.gnupg.key_signatures(self.kid))
         sigs = []
         for keyid in keyids:
             if int(self.kid, 16) == int(keyid,16):
