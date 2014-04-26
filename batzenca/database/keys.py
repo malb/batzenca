@@ -341,6 +341,48 @@ class Key(Base):
             except EntryNotFound:
                 sigs.append(keyid)
         return tuple(sigs)
+
+    def clean(self, whitelist=None):
+        """Remove all signatures except self-signature and those given in
+        whitelist.
+
+        :param iterable whitelist: a list of
+            :class:`batzenca.database.keys.Key`,
+            :class:`batzenca.database.peers.Peer`,
+            :class:`batzenca.database.policies.Policy`,
+            :class:`batzenca.database.mailinglists.MailingList`.
+            :class:`batzenca.database.releases.Release`.
+        """
+        from keys import Key
+        from peers import Peer
+        from mailinglists import MailingList
+        from policies import Policy
+        from releases import Release
+
+        def extract_key(obj):
+            if isinstance(obj, str) or isinstance(obj, unicode):
+                return obj
+            elif isinstance(obj, Key):
+                return obj
+            elif isinstance(obj, Peer):
+                return obj.Key
+            elif isinstance(obj, Policy):
+                return obj.ca
+            elif isinstance(obj, MailingList):
+                return obj.policy.ca
+            elif isinstance(obj, Release):
+                return obj.policy.ca
+            else:
+                raise TypeError("Type '%s' of '%s' not understood."%(type(obj),obj))
+
+        if whitelist:
+            whitelist = [extract_key(obj) for obj in whitelist]
+        else:
+            whitelist = []
+        whitelist.append(self)
+
+        for signature in set(self.signatures).difference(whitelist):
+            self.delete_signature(signature)
         
     @property
     def _pyme_key(self):
