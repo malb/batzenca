@@ -79,9 +79,6 @@ Prerequisites
 
 * BatzenCA uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
   all metadata about keys such as users, releases, mailing lists, policies etc.
-
-* BatzenCA uses `Git <http://git-scm.com/>`_ to record the history of PGP keys
-  and the SQLite database it stores to allow easy rollbacks.
   
 Alternatives
 ------------
@@ -102,3 +99,8 @@ Alternatives to realising OpenPGP encrypted mailinglists include
   text. SELS has been developed with available open-source components and is compatible with many
   commonly used email clients." -- http://sels.ncsa.illinois.edu/ However, the project is
   discontinued.
+
+Full Documentation
+------------------
+
+The full documentation of BatzenCA is available at http://batzenca.readthedocs.org.
