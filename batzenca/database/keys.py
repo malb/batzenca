@@ -18,7 +18,7 @@ class Key(Base):
     particularities of dealing with the GnuPG backend are hidden behind the functions of this
     class.
 
-    :param int keyid: a key id as an integer
+    :param keyid: a key id as an integer or a hex string
     :param str name: a username, if ``None`` is given, then it is read from GnuPG
     :param str email: an e-mail address, if ``None`` is given, then it is read from GnuPG
     :param timestamp: the timestamp when this key was created, if ``None`` is given, then it is
@@ -41,6 +41,12 @@ class Key(Base):
 
     @staticmethod
     def canonical_keyid(keyid):
+        """Convert keyid to canonical representation as a hex string of the last
+        64 bits.
+
+        :param keyid: a key id as an integer or a hex string.
+
+        """
         try:
             keyid = "0x%016x"%keyid
         except TypeError:
@@ -82,7 +88,7 @@ class Key(Base):
         considered an inconsistent state of the database and a :class:`RuntimeError` exception is
         raised.
 
-        :param keyid: key id as integer or string in hexadecimal format
+        :param keyid: key id as integer or a hex string
 
         .. note::
 
@@ -317,9 +323,11 @@ class Key(Base):
 
     @property
     def signatures(self):
-        """A tuple where each entry represents a key that signed this key. The entries are either
-        :class:`batzenca.database.keys.Key` objects - if the key is present in the local GnuPG key
-        store - or strings of the key id.
+        """A tuple where each entry represents a key that signed this key. The
+        entries are either :class:`batzenca.database.keys.Key` objects - if the
+        key is present in the local GnuPG key store - or strings of the key
+        id.
+
         """
         from batzenca.session import session
         keyids = tuple(Key.canonical_keyid( keyid ) for keyid in session.gnupg.key_signatures(self.kid))
