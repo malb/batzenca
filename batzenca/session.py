@@ -40,6 +40,11 @@ class Session:
     def add_all(self):
         return self.db_session.add_all
 
+    @property
+    def release_dump_path(self):
+        """Path for storing releases in .asc and .yaml format."""
+        return os.path.join(self.path, "releases")
+        
         
 BATZENCADIR  = os.environ.get("BATZENCADIR", os.path.expanduser("~") + os.path.sep + ".batzenca")
 session = Session(BATZENCADIR)

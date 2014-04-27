@@ -9,6 +9,7 @@
 import datetime
 
 import warnings
+import codecs
 
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
@@ -604,10 +605,46 @@ class Release(Base):
             msg['Subject'] = "key expiry warning".format(mailinglist=mailinglist.name)
             M.append( msg )
         return tuple(M)
+
+
+    def dump(self, filename=None):
+        """Write this release to to filename.yaml and filename.asc where the
+        former receives :attr:`batzenca.database.releases.Release.yaml` and the
+        latter receives :attr:`batzenca.database.releases.Release.ascii_keys`.
+
+        :param str filename: a string containing a full path and basename.
+
+        """
+        if filename is None:
+            filename = os.path.join(session.release_dump_path,
+                                    "%s-%04d%02d%02d"%(self.mailinglist.name,
+                                                       self.date.year, self.date.month, self.date.day))
+        codecs.open(filename+".yaml", encoding="utf8", mode="w").write( self.yaml )
+        open(filename+".asc", "w").write( self(previous=None, check=False)[1] )
+
         
     def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None,
              new_peer_tolerance_days=180, key_expiry_warning_days=30):
         """Publish this release.
+
+        This entails (if ``debug==False``):
+
+        1. updating the release date of this release
+
+        2. a call to :func:`batzenca.database.releases.Release.deactivate_invalid`
+
+        3. sending an e-mail to new members who have not been on this list for ``new_peer_tolerance_days`` days.
+
+        4. sending a key update message to the list
+
+        5. a call to :func:`batzenca.database.releases.Release.dump`
+       
+        6. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
+
+        7. setting this release status to published.
+
+        If ``debug == True`` then e-mails are sent to the CA's e-mail address instead of the list and/or
+        peers. Furthermore, neither the date nor the published status of this release is affected in this case.
 
         :param smtpserver:
         :param batzenca.database.releases.Release previous: the previous release, we call
@@ -623,8 +660,9 @@ class Release(Base):
         .. warning:
 
             Calling this function may modify this release. Firstly, this function calls
-            :func:`batzenca.database.releases.Release.deactivate_invalid`. Secondly, if ``debug`` is
-            ``False``, :attr:`batzenca.database.releases.Release.date` is set to today's date.
+            :func:`batzenca.database.releases.Release.deactivate_invalid`. Secondly, if ``debug`` is ``False``,
+            :attr:`batzenca.database.releases.Release.date` is set to today's date and
+            :attr:`batzenca.database.releases.Release.published` is set to ``True``.
 
         """
         if self.published:
@@ -638,17 +676,23 @@ class Release(Base):
         if new_peer_tolerance_days and self.mailinglist.new_member_msg:
             messages = self.welcome_messages(tolerance=new_peer_tolerance_days, debug=debug)
             for msg in messages:
-                # we send a copy to self
-                smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
+                if debug:
+                    smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
+                else: # we send a copy to self
+                    smtpserver.sendmail(self.policy.ca.email, (self.policy.ca.email, ), msg.as_string())
 
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
 
         if not debug:
             self.published = True
-        
+            self.dump()
+                    
         if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
             messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
             for msg in messages:
-                # we send a copy to self
-                smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
+                if debug:
+                    smtpserver.sendmail(self.policy.ca.email, (self.policy.ca.email,), msg.as_string())
+                else:
+                    # we send a copy to self
+                    smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
