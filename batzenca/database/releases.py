@@ -606,8 +606,19 @@ class Release(Base):
         return tuple(M)
         
     def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None,
-             new_peer_tolerance=180, key_expiry_warning_days=30):
+             new_peer_tolerance_days=180, key_expiry_warning_days=30):
         """Publish this release.
+
+        :param smtpserver:
+        :param batzenca.database.releases.Release previous: the previous release, we call
+            :func:`batzenca.database.releases.Release.diff` on it.  if ``None`` then ``self.prev``
+            is used.
+        :param boolean check: if ``True`` then :func:`batzenca.database.releases.Release.verify` is
+            run.
+        :param boolean debug:
+        :param iterable attachments:
+        :param int new_peer_tolerance_days:
+        :param int key_expiry_warning_days:
 
         .. warning:
 
@@ -624,8 +635,8 @@ class Release(Base):
 
         self.deactivate_invalid()
 
-        if new_peer_tolerance and self.mailinglist.new_member_msg:
-            messages = self.welcome_messages(tolerance=new_peer_tolerance, debug=debug)
+        if new_peer_tolerance_days and self.mailinglist.new_member_msg:
+            messages = self.welcome_messages(tolerance=new_peer_tolerance_days, debug=debug)
             for msg in messages:
                 # we send a copy to self
                 smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
