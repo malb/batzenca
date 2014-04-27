@@ -1,8 +1,11 @@
-def thunderbird_rules(release):
-    """Return an XML string which matches that used by Thunderbird/Icedove to store "per-recipient
-    rules"
+def thunderbird_rules(release, mime_encode=False, mime_filename=None):
+    """Return an XML string which matches that used by Thunderbird/Icedove to
+    store "per-recipient rules"
 
     :param batzenca.database.releases.Release release: the target release
+    :param boolean mime_encode: MIME encode before outputting
+    :param str mime_filename: filename used for MIME encoding (default:
+        '<mailinglist.name>_rules_<year>-<month>-<day>.xml')
 
     """
     import StringIO
@@ -15,7 +18,23 @@ def thunderbird_rules(release):
     fh.write("  </pgpRuleList>\n")
     content = fh.getvalue()
     fh.close()
-    return content
+
+    if mime_encode:
+        from email import encoders
+        from email.mime.base import MIMEBase
+
+        xml_rules = MIMEBase('application', 'xml')
+        xml_rules.set_payload(content)
+        encoders.encode_base64(xml_rules)
+
+        if mime_filename is None:
+            mime_filename = "%s_rules_%04d%02d%02d.xml"%(release.mailinglist.name,
+                                                         release.date.year, release.date.month, release.date.day)
+        
+        xml_rules.add_header('Content-Disposition', 'attachment', filename=mime_filename)
+        return xml_rules
+    else:
+        return content
 
     
 def plot_nkeys(mailinglists, active_only=True):
