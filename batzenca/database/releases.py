@@ -6,6 +6,7 @@
 .. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
 """
+import os
 import datetime
 
 import warnings
@@ -615,6 +616,8 @@ class Release(Base):
         :param str filename: a string containing a full path and basename.
 
         """
+        from batzenca import session
+        
         if filename is None:
             filename = os.path.join(session.release_dump_path,
                                     "%s-%04d%02d%02d"%(self.mailinglist.name,
