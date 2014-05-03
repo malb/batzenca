@@ -70,15 +70,28 @@ Prerequisites
          if ($1) free($1);
        }
        
-  Alternatively, you can check out the "fixes" branch of https://bitbucket.org/malb/pyme/
+  To get a fixed version you can check out and install the "fixes" branch of
+  https://bitbucket.org/malb/pyme/
   
-  An abandoned branch is available which attempts to switch to the newer `PyGPGME
+  Note that an abandoned branch is available which attempts to switch to the newer `PyGPGME
   <https://launchpad.net/pygpgme>`_ is available `on Bitbucket
   <https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned because PyGPGME does not
   provide an interface to all GPGME functions needed by batzenca.
 
 * BatzenCA uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite database which stores
   all metadata about keys such as users, releases, mailing lists, policies etc.
+
+* BatzenCA uses `GitPython <https://pythonhosted.org/GitPython/0.3.2/index.html>`_ to take snapshots
+  of its database.
+
+Installation
+------------
+
+The easiest way to install all required Python packages is
+
+  .. code-block:: bash
+
+    pip install -r requirements.txt
   
 Alternatives
 ------------
