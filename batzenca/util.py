@@ -1,9 +1,21 @@
+"""
+.. module:: utils
+ 
+.. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
+
+Various utility functions.
+"""
+
+import sys
+
 def thunderbird_rules(release, mime_encode=False, mime_filename=None):
     """Return an XML string which matches that used by Thunderbird/Icedove to
     store "per-recipient rules"
 
     :param batzenca.database.releases.Release release: the target release
+
     :param boolean mime_encode: MIME encode before outputting
+
     :param str mime_filename: filename used for MIME encoding (default:
         '<mailinglist.name>_rules_<year>-<month>-<day>.xml')
 
@@ -38,12 +50,14 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
 
     
 def plot_nkeys(mailinglists, active_only=True):
-    """Write a PDF file which plots the number of (active) keys over time in all releases for all
-    ``mailinglists``.
+    """Write a PDF file which plots the number of (active) keys over time in all releases for all ``mailinglists``.
 
     :param iterable mailinglists: instances of :class:`batzenca.database.mailinglists.MailingList`
+
     :param boolean active_only: only consider active keys; if ``False`` all keys are considered
 
+
+    .. note:: requires matplotlib
     """
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
@@ -63,7 +77,6 @@ def plot_nkeys(mailinglists, active_only=True):
     plt.gcf().set_size_inches(20,5) 
     plt.gcf().autofmt_xdate()
     plt.savefig("-".join([mailinglist.name  for mailinglist in mailinglists]) + ".pdf")
-
 
 def find_orphaned_keys():
     """Find keys in the GnuPG database which do not have an instance of :class:`Key` associated with it.
@@ -139,7 +152,7 @@ def import_new_key(key, peer=None):
                 peer.key.revoke_signature(mailinglist.policy.ca)
     key.peer = peer
 
-    # 3. update mailing lists
+    # 5. add the key the current release
 
     signatures = set([key])
     
@@ -162,11 +175,106 @@ def import_new_key(key, peer=None):
 
         print "done"
         print
-        
-    for signature in set(key.signatures).difference(signatures):
-        key.delete_signature(signature)
+
+    # 6. delete all superfluous signatures
+    key.clean(signatures)
 
     print "signatures:"
     for signature in key.signatures:
         print "-",signature
+
+def smtpserverize(email):
+    """Read BATZENCA_DIR/smtp.cfg and construct smtpserver object for entry matching ``email``
+
+    :param string email: an e-mail address
+
+    It is assumed that smtp.cfg has the following form::
+
+        [email]
+        host: example.com
+        port: 25
+        username: user
+        password: secret!
+        security: starttls 
+
+    Supported values for security are "starttls" and "tls".
+
+    """
+    import ConfigParser
+    import smtplib
+    import os
+    from batzenca import session
+    
+    config = ConfigParser.ConfigParser()
+    config.read(os.path.join(session.path, "smtp.cfg"))
+    host = config.get(email, 'host')
+    port = config.getint(email, 'port')
+    security = config.get(email, 'security')
+
+    if security.lower() == 'starttls':
+        smtpserver = smtplib.SMTP(host, port=port)
+        smtpserver.ehlo(name='localhost')
+        smtpserver.starttls()
+        smtpserver.login(config.get(email, "username"), config.get(email, "password"))
+    elif security.lower() == 'tls':
+        smtpserver = smtplib.SMTP_SSL(server, port=port)
+        smtpserver.ehlo(name='localhost')
+        smtpserver.login(config.get(email, "username"), config.get(email, "password"))
+    else:
+        raise ValueError("value '%s' for security not understood. Supported options are 'starttls' and 'tls'."%security)
+    return smtpserver
+
+def publish(mailinglists=None, debug=False, msg="", include_thunderbird_rules=True):
+    """Publish all outstanding releases.
+
+    :param iterable mailinglists: a list of mailing lists to consider or ``None`` for all.
+
+    :param boolean debug: do not send e-mail to lists but to CA e-mail address.
+
+    :param string msg: message to be included in git commit
+
+    :param boolean include_thunderbird_rules: attach XML formated rules for Thunderbird/Icedove
+
+    """
+    from batzenca import MailingList, session
+    
+    if mailinglists is None:
+        mailinglists = MailingList.all()
+    
+    published_releases = []
+    smtpservers = {}
+
+    for i, mailinglist in enumerate(mailinglists):
+        print "%3d. [%s]"%(i, mailinglist),
+        release = mailinglist.current_release
+
+        if release.published:
+            print
+            continue
+
+        if include_thunderbird_rules:
+            attachments = (thunderbird_rules(release, mime_encode=True),)
+        else:
+            attachments = tuple()
+
+        email = release.policy.ca.email
+        
+        if email in smtpservers:
+            smtpserver = smtpservers[email]
+        else:
+            smtpserver = smtpserverize(email)
+            smtpservers[email] = smtpserver
+
+        release.send(smtpserver, debug=debug, attachments=attachments)
+        
+        published_releases.append(mailinglist.name)
+
+        print "published"
+        sys.stdout.flush()
+
+    for smtpserver in smtpservers.itervalues():
+        smtpserver.quit()
+
+    msg = msg + " " + ", ".join(published_releases)
+    session.commit(verbose=True, snapshot=True, msg=msg)
         
