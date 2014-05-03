@@ -637,9 +637,9 @@ class Release(Base):
 
         4. sending a key update message to the list
 
-        5. a call to :func:`batzenca.database.releases.Release.dump`
+        5. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
        
-        6. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
+        6. a call to :func:`batzenca.database.releases.Release.dump`
 
         7. setting this release status to published.
 
@@ -667,11 +667,17 @@ class Release(Base):
         """
         if self.published:
             raise ValueError("Release '%s' is already published"%self)
-        
+
+        # 1. updating the release date of this release
+            
         if not debug:
             self.date = datetime.date.today()
 
+        # 2. a call to :func:`batzenca.database.releases.Release.deactivate_invalid`
+
         self.deactivate_invalid()
+
+        # 3. sending an e-mail to new members who have not been on this list for ``new_peer_tolerance_days`` days.
 
         if new_peer_tolerance_days and self.mailinglist.new_member_msg:
             messages = self.welcome_messages(tolerance=new_peer_tolerance_days, debug=debug)
@@ -681,12 +687,12 @@ class Release(Base):
                 else: # we send a copy to self
                     smtpserver.sendmail(self.policy.ca.email, (self.policy.ca.email, ), msg.as_string())
 
+        # 4. sending a key update message to the list
+
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
-
-        if not debug:
-            self.published = True
-            self.dump()
+       
+        # 5. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
                     
         if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
             messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
@@ -696,3 +702,13 @@ class Release(Base):
                 else:
                     # we send a copy to self
                     smtpserver.sendmail(self.policy.ca.email, (msg['To'],self.policy.ca.email), msg.as_string())
+
+        # 6. a call to :func:`batzenca.database.releases.Release.dump`
+
+        if not debug:
+            self.dump()
+
+        # 7. setting this release status to published.
+
+        if not debug:
+            self.published = True
