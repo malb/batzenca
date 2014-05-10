@@ -48,9 +48,10 @@ releases
             open(os.path.join(repo.working_dir, ".gitignore"), "w").write(Session._gitignore)
             # add useful files
             repo.git.add("batzenca.db")
-            repo.git.add("gnupg/pubring.gpg")
-            repo.git.add("gnupg/secring.gpg")
-            repo.git.add("gnupg/trustdb.gpg")
+            for filename in ("pubring.gpg", "secring.gpg", "trustdb.gpg"):
+                fullpath = os.path.join(repo.working_dir, "gnupg", filename)
+                if os.path.exists(fullpath):
+                    repo.git.add(fullpath)
             repo.git.commit(m="initial commit")
             
     def commit(self, snapshot=False, *args, **kwds):
