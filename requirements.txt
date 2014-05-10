@@ -1,4 +1,4 @@
 GitPython==0.3.2.RC1
 SQLAlchemy
 ipython
-git+https://bitbucket.org/malb/pyme@fixes
+git+https://bitbucket.org/malb/pyme
