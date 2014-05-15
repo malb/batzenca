@@ -99,7 +99,7 @@ def find_orphaned_keys():
             orphans.append(Key(int(key.subkeys[0].keyid,16)))
     return tuple(orphans)
 
-def import_new_key(key, peer=None):
+def import_new_key(key, peer=None, mailinglists=None, force=False):
     """Import a new ``key`` for ``peer``.
 
     This function does the following for all mailing lists on which the provided
@@ -119,8 +119,16 @@ def import_new_key(key, peer=None):
     6. delete all superfluous signatures
     
     :param batzenca.database.keys.Key key: the new key
+
     :param batzenca.database.peers.Peer peer: the peer to use in case it cannot
         be determined automtically
+
+    :param iterable mailinglists: a list of mailing lists to consider or
+        ``None`` for all.
+
+    :param boolean force: by default a key is only added to a list if the
+        matching peer has a key in the current release. If ``force==True`` the
+        key is added unconditionally.
 
     """
     from batzenca.database import MailingList, Peer
@@ -134,20 +142,21 @@ def import_new_key(key, peer=None):
     print "peer:: %s"%peer
     print
 
+    if mailinglists is None:
+        mailinglists = MailingList.all()
+
+    mailinglists = [m for m in mailinglists if force or (peer in m.current_release)]
+        
     # 1. check
             
-    for mailinglist in MailingList.all():
-        if peer not in mailinglist.current_release:
-            continue
+    for mailinglist in mailinglists:
         if not mailinglist.policy.check(key, check_ca_signature=False):
             raise ValueError("key %s does not pass policy check for %s"%(key, mailinglist))
     
     # 2. update peer
 
     if peer.key and peer.key != key:
-        for mailinglist in MailingList.all():
-            if peer not in mailinglist.current_release:
-                continue
+        for mailinglist in mailinglists:
             if mailinglist.policy.ca in peer.key.signatures:
                 peer.key.revoke_signature(mailinglist.policy.ca)
     key.peer = peer
@@ -156,12 +165,8 @@ def import_new_key(key, peer=None):
 
     signatures = set([key])
     
-    for mailinglist in MailingList.all():
+    for mailinglist in mailinglists:
         print "#",mailinglist,"#"
-        if peer not in mailinglist.current_release:
-            print "skipping"
-            print
-            continue
 
         key.sign(mailinglist.policy.ca)
         signatures.add(mailinglist.policy.ca)
