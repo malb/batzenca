@@ -46,7 +46,7 @@ that keys must expire every 2 years.
 Prerequisites
 -------------
 
-* BatzenCA relies on `PyMe <http://bitbucket.org/malb/pyme/>`_ ≥ 0.9.0 for
+* BatzenCA relies on `PyMe <http://bitbucket.org/malb/pyme/>`_ >= 0.9.0 for
   talking to GnuPG.
 
   Note that an abandoned branch is available which attempts to switch to the
