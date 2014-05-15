@@ -8,7 +8,7 @@
 Overview
 ========
 
-.. include:: ../README.txt
+.. include:: ../README
 
 Table of Contents
 =================
