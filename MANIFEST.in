@@ -1,0 +1,5 @@
+include requirements.txt
+recursive-include tests *.py
+include tests/batzencadir/gnupg/pubring.gpg
+include tests/batzencadir/gnupg/secring.gpg
+include tests/batzencadir/gnupg/trustdb.gpg
