@@ -66,9 +66,7 @@ Prerequisites
 Installation
 ------------
 
-The easiest way to install all required Python packages is
-
-  .. code-block:: bash
+The easiest way to install all required Python packages is::
 
     pip install -r requirements.txt
 
