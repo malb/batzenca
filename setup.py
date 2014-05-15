@@ -6,7 +6,7 @@ setup(
     packages = ['batzenca', 'batzenca/database'],
     scripts = ['scripts/batzenca-interactive.py', 'scripts/batzenca-release.py'],
     license = 'Simplified BSD License',
-    long_description=open('README.txt').read(),
+    long_description=open('README.rst').read(),
     author = 'Martin R. Albrecht',
     author_email = 'martinralbrech+batzenca@googlemail.com',
     url = 'https://bitbucket.org/malb/batzenca',
