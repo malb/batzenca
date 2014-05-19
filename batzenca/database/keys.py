@@ -1,6 +1,6 @@
 """
 .. module:: keys
- 
+
 .. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
 Keys represent PGP keys and are typically stored in the database.
@@ -52,7 +52,7 @@ class Key(Base):
         except TypeError:
             pass
         return "0x%016x"%(int(keyid,16) % (1<<64))
-    
+
     def __init__(self, keyid, name=None, email=None, timestamp=None):
         self.kid = Key.canonical_keyid(keyid)
 
@@ -79,7 +79,7 @@ class Key(Base):
             raise ValueError("Key with keyid '%s' already found in database."%self.kid)
         except EntryNotFound:
             pass
-            
+
 
     @classmethod
     def from_keyid(cls, keyid):
@@ -96,7 +96,7 @@ class Key(Base):
 
         """
         keyid = Key.canonical_keyid(keyid)
-            
+
         from batzenca.session import session
         res = session.db_session.query(cls).filter(cls.kid == keyid)
 
@@ -116,7 +116,7 @@ class Key(Base):
         will yield the same result if more than one key has the provided ``name``.
 
         :param str name: the name the database is queried for
-        
+
         .. note::
 
            The returned object was aquired from the master session and lives there.
@@ -147,7 +147,7 @@ class Key(Base):
             Peer.from_email(email).key
 
         :param str email: the email the database is queried for
-        
+
         .. note::
 
            The returned object was aquired from the master session and lives there.
@@ -170,7 +170,7 @@ class Key(Base):
         of :class:`batzenca.database.keys.Key` objects is returned.
 
         :param str filename: a file name
-        
+
         .. note::
 
            The returned objects were not added to any session, any keys found in ``filename`` were
@@ -202,9 +202,9 @@ class Key(Base):
         :class:`batzenca.database.keys.Key` objects is returned.
 
         :param str ascii_data: PGP keys in ASCII format
-        
+
         .. note::
-        
+
            The returned object was not added to any session, any keys found in ``ascii_data`` were
            added to the GnuPG database.
 
@@ -225,7 +225,7 @@ class Key(Base):
                 ret.append(key)
             return tuple(ret)
 
-        
+
     def __nonzero__(self):
         """Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
         subkey for signing and one valid subkey for encrypting.
@@ -309,7 +309,7 @@ class Key(Base):
         """Delete all signatures made by ``signer``.
 
         :param batzenca.database.keys.Key signer: - the signer for which to delete signatures.
-        
+
         .. warning:
 
            This may open an interactive session using rawinput
@@ -383,7 +383,7 @@ class Key(Base):
 
         for signature in set(self.signatures).difference(whitelist):
             self.delete_signature(signature)
-        
+
     @property
     def _pyme_key(self):
         from batzenca.session import session

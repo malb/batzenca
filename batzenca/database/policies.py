@@ -34,7 +34,7 @@ class PolicyViolation(Warning):
         >>> with warnings.catch_warnings():
         ...   warnings.simplefilter("error", PolicyViolation)
         ...   # do something
-    
+
     """
     def __init__(self, msg):
         Warning.__init__(self, msg.encode('utf8'))
@@ -63,7 +63,7 @@ class Policy(Base):
 
     key_len             = Column(Integer) #: the minimum required key length
     key_lifespan        = Column(Integer) #: the maximal key lifespan in days
-    algorithms_str      = Column(String) 
+    algorithms_str      = Column(String)
 
     dead_man_switch     = Column(Boolean)
     description         = Column(UnicodeText)
@@ -84,7 +84,7 @@ class Policy(Base):
             except KeyError:
                 raise ValueError("Algoritm '%s' is unknown. Supported algorithms are '%s'"%(alg, ", ".session.gnupg.str_to_alg.keys()))
         self.algorithms_str = ",".join(algs)
-            
+
         self.description = unicode(description)
 
     @classmethod
@@ -92,7 +92,7 @@ class Policy(Base):
         """Search the database for the policy matching the key.
 
         :param batzenca.database.keys.Key key: the key to query the database with
-        
+
         .. note::
 
            The returned object was queried from the main session and lives there.

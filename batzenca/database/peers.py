@@ -1,6 +1,6 @@
 """
 .. module:: peers
- 
+
 .. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
 Peers are people, typically.
@@ -57,10 +57,10 @@ class Peer(Base):
 
         :param batzenca.database.peers.Peer left: first peer
         :param batzenca.database.peers.Peer right: second peer
-        
+
         We favour ``left`` over ``right``. That is, if ``name``, ``email`` or ``dataX`` is set for
         ``left``, we pick this data even if these fields are set in ``right`` as well.
-        
+
         .. note::
 
            The returned object was not added to any session.
@@ -82,7 +82,7 @@ class Peer(Base):
         """Return the peer associatied with ``key`` in the database.
 
         :param batzenca.database.keys.Key key: the key to query for
-        
+
         :raises batzenca.database.base.EntryNotFound: when no entry is found
         :raises RuntimeError: if more than one element is found as this is considered an
             inconsistent state of the database
@@ -139,7 +139,7 @@ class Peer(Base):
         :param str email: the email address we are looking for
 
         :raises batzenca.database.base.EntryNotFound: when no entry is found
-        
+
         .. note::
 
            The returned object was aquired from the master session and lives there.
@@ -160,7 +160,7 @@ class Peer(Base):
 
     def __str__(self):
         return unicode(self).encode('utf-8')
-        
+
     def __unicode__(self):
         data = (self.data0, self.data1, self.data2, self.data3)
         data = u", ".join(d for d in data if d)
@@ -185,7 +185,7 @@ class Peer(Base):
     def email(self):
         """ Return the e-mail address associated to the most rcent active key associated with this peer."""
         return str(self.key.email)
-        
+
 def merge_peers(left, right):
     """Wrapper around :func:`batzenca.database.peers.Peer.merge` which modifies the master session.
 
@@ -195,7 +195,7 @@ def merge_peers(left, right):
 
     :param batzenca.database.peers.Peer left: the first peer
     :param batzenca.database.peers.Peer right: the second peer
-    
+
     .. note ::
 
          Changes to the master session are not committed.

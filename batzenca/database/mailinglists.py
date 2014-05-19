@@ -1,6 +1,6 @@
 """
 .. module:: mailinglists
- 
+
 .. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
 Mailing lists is what we do the work for.
@@ -17,17 +17,15 @@ from peers import Peer
 import warnings
 
 class MailingList(Base):
-    """This class represents a mailing list. A mailing list is an object which has one or more
+    """
+    This class represents a mailing list. A mailing list is an object which has one or more
     :class:`batzenca.database.releases.Release` objects associationed with it.
 
     :param str name: the name of this mailing list.
     :param str email: the e-mail address of this mailing list.
-
     :param policy: an object of type :class:`batzenca.database.policies.Policy` which is applied by
         default to releases
-
     :param str description: an informal description of this mailing list.
-
     :param str new_member_msg: this message ought to be sent to peers when they join the list for
       the first time. This message could contain etiquette etc.  This is string supports a limited
       number of template fields which are replaced by the actual values in
@@ -43,33 +41,32 @@ class MailingList(Base):
         ``{ca}`` - the CA's name
 
         ``{ca_email}`` - the CA's e-mail address
-    
     :param str key_update_msg: this message is sent when a new release is published. It typically
       contains a list of all keys associated with this release. For this reason this string supports
       a limited number of template fields which are replaced by the actual values in
       :func:`batzenca.database.releases.Release.publish`. These fields are:
-        
+
         ``{mailinglist}`` - the name of this mailing list
-        
+
         ``{peers_in}`` - a comma-separated list of names
         (:class:`batzenca.database.peers.Peer.name`) which are new in the current release.
-        
+
         ``{peers_changed}`` - a comma-separated list of names
         (:class:`batzenca.database.peers.Peer.name`) which are changed their keys in the current
         release.
-        
+
         ``{peers_out}`` - a comma-separated list of names
         (:class:`batzenca.database.peers.Peer.name`) which left the mailing list in the current
         release.
-        
+
         ``{keys_in}`` - a line-break-separated list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) that joined the mailing list in
         the current release.
-        
+
         ``{keys_out}`` - a line-break-separated list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) that left this mailing list in the
         current release.
-        
+
         ``{keys}`` - a complete line-break-separated list of keys (printed using
         :func:`batzenca.database.releases.Release._format_entry`) in the current release.
 
@@ -79,7 +76,7 @@ class MailingList(Base):
 
         ``{dead_man_switch}`` - an optional message stating that no attempts were made to compel the
         CA to compromise the integrity of the list.
-    
+
     :param str key_expiry_warning_msg: this message is sent when a key is about to expire, to warn
       the user about this fact. This is string supports a limited number of template fields which
       are replaced by the actual values in
@@ -107,7 +104,7 @@ class MailingList(Base):
 
     __tablename__ = 'mailinglists'
 
-    id          = Column(Integer, primary_key=True) 
+    id          = Column(Integer, primary_key=True)
     name        = Column(String, unique=True, nullable=False)
     email       = Column(String)
     description = Column(UnicodeText)
@@ -146,7 +143,7 @@ class MailingList(Base):
         from batzenca import session
         res = session.db_session.query(MailingList)
         return tuple(res.all())
-        
+
     def __str__(self):
         return self.name
 
@@ -162,14 +159,14 @@ class MailingList(Base):
             return self.releases[-1]
         except IndexError:
             raise IndexError("The mailing list '%s' has no release yet."%self)
-    
+
     def new_release(self, date=None, inherit=True, deactivate_invalid=True, delete_old_inactive_keys=5):
         """Create a new release for this mailing list.
 
         If ``inherit == True`` then :func:`batzenca.database.releases.Release.inherit` is called and
         the remaining parameters are passed through. Otherwise a new empty release is created and no
         parameter except for ``date`` would make sense.
-        
+
         :param date: the date of this release. If ``None`` today's date is used
         :param boolean inherit: inherit keys and policy from the currently active release
         :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
@@ -202,7 +199,7 @@ class MailingList(Base):
         """
         from batzenca.session import session
         from sqlalchemy.sql import or_
-        
+
         query = session.db_session.query(Release).filter(Release.mailinglist == self)
         query = query.join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == Release.id)
         query = query.join(Key)
@@ -214,9 +211,8 @@ class MailingList(Base):
             query = query.filter(ReleaseKeyAssociation.left_id == obj.id)
         else:
             raise TypeError("Object of type '%s' passed, but only types `Peer` and `Key` are supported."%(type(obj)))
-            
+
         if query.first() is not None:
             return True
         else:
             return False
-            

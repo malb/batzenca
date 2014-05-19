@@ -42,7 +42,7 @@ class Release(Base):
 
     Releases contain active and inactive keys. The former are keys users are expected to use. The
     latter inform the user about invalidated keys for example by revoked signatures.
-    
+
     :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist for which this release
         is intended
     :param date: the date of this release
@@ -93,11 +93,11 @@ class Release(Base):
         element is found the "first" element is returned, where "first" has no particular meaning
         and is implementation specific.  In this case a warning is issued.
 
-        
+
         :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist on which the
             target release was released
         :param date: the date on which the target release was released
-        
+
         :raises batzenca.database.base.EntryNotFound: when no entry is found
 
         .. note::
@@ -118,7 +118,7 @@ class Release(Base):
     def inherit(self, date=None, policy=None, deactivate_invalid=True, delete_old_inactive_keys=5):
         """Construct a new release by inheritance from this release. Inheritance means that active
         and inactive keys are carried forward.
-        
+
         :param date: the date of this release. If ``None`` today's date is used
         :param boolean deactivate_invalid: deactivate keys which are no longer valid, e.g. because
           they are expired.
@@ -133,18 +133,18 @@ class Release(Base):
 
         if policy is None:
             policy = self.policy
-            
-        release = Release(mailinglist=self.mailinglist, 
-                          date=date, 
-                          active_keys = active_keys, 
-                          inactive_keys = inactive_keys, 
+
+        release = Release(mailinglist=self.mailinglist,
+                          date=date,
+                          active_keys = active_keys,
+                          inactive_keys = inactive_keys,
                           policy=policy)
 
         if deactivate_invalid:
-            release.deactivate_invalid() 
+            release.deactivate_invalid()
         if delete_old_inactive_keys:
             release.delete_old_inactive_keys(delete_old_inactive_keys)
-            
+
         for key in self.active_keys:
             if self.has_exception(key):
                 release.add_exception(key)
@@ -166,7 +166,7 @@ class Release(Base):
     def __repr__(self):
         s = "<Release: %s, %s (%s), %s (%s + %s) keys>"%(self.id, self.date, self.mailinglist, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
         return unicode(s).encode('utf-8')
-                
+
     def __str__(self):
         from batzenca.database.policies import PolicyViolation
         inact_no_sig = 0
@@ -197,7 +197,7 @@ class Release(Base):
 
         :param batzenca.database.releases.Release other: the release to compare
             against, if ``None`` then ``self.prev`` is chosen
-        
+
         :return: this function returns five tuples:
 
         - ``keys_in`` - keys that are active in this release but are not active in ``other``
@@ -210,15 +210,15 @@ class Release(Base):
         """
         if other is None:
             other = self.prev
-        
-        keys_prev = set(other.active_keys + self.inactive_keys)        
+
+        keys_prev = set(other.active_keys + self.inactive_keys)
         keys_curr = set(self.active_keys) # keys that are in this release
 
         # keys that used to be in but are not any more
         keys_out = keys_prev.difference(keys_curr)
         # keys that are new
         keys_in  = keys_curr.difference(other.active_keys)
-        
+
         peers_prev = set([Peer.from_key(key) for key in keys_prev])
         peers_curr = set([Peer.from_key(key) for key in keys_curr])
         peers_in   = set([Peer.from_key(key) for key in keys_in  ])
@@ -303,8 +303,8 @@ class Release(Base):
             self.key_associations.remove(assoc)
             from batzenca.session import session
             session.db_session.delete(assoc)
-            
-                
+
+
     def _get_assoc(self, key):
         if key.id is None or self.id is None:
             for assoc in self.key_associations:
@@ -378,10 +378,10 @@ class Release(Base):
         else:
             if active and key.peer in self:
                 raise ValueError("Peer '%s' associated with Key '%s' already has an active key in this release"%(key.peer, key))
-            
+
         if check and active:
             self.policy.check(key)
-                        
+
         self.key_associations.append(ReleaseKeyAssociation(key=key, active=active))
 
     def __contains__(self, obj):
@@ -404,7 +404,7 @@ class Release(Base):
                 return True
             else:
                 raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(obj, self))
-            
+
         elif isinstance(obj, Peer):
             res = session.db_session.query(Peer).join(Key).join(ReleaseKeyAssociation).filter(Key.peer_id == obj.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
             if res.count() == 0:
@@ -439,7 +439,7 @@ class Release(Base):
         s.append( "mailinglist: %s"%self.mailinglist.email )
         s.append( "date:        %04d-%02d-%02d"%(self.date.year, self.date.month, self.date.day) )
         s.append( "ca:          %s"%self.policy.ca.kid )
-        
+
         s.append( "active keys:" )
         for key in self.active_keys:
             s.append( "  - %s"%key.kid )
@@ -452,7 +452,7 @@ class Release(Base):
 
     def expiring_keys(self, days=30):
         return tuple(key for key in self.active_keys if key.expires and key.expires < self.date + datetime.timedelta(days=days))
-        
+
     def __call__(self, previous=None, check=True, still_alive=False):
         """Return tuple representing this release as a (message, keys) pair.
 
@@ -476,7 +476,7 @@ class Release(Base):
             self.verify()
 
         sorted_keys = lambda keys: sorted(keys, key=lambda x: x.name.lower())
-            
+
         keys = []
         for i,key in enumerate(sorted_keys(self.active_keys)):
             keys.extend(Release._format_entry(i, key))
@@ -496,7 +496,7 @@ class Release(Base):
             peers_left    = ", ".join(peer.name for peer in peers_left)
         else:
             keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
-            
+
         msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
                                                      keys_in       = keys_in,
                                                      keys_out      = keys_out,
@@ -523,7 +523,7 @@ class Release(Base):
         from email.mime.multipart import MIMEMultipart
         from email.mime.text import MIMEText
         from batzenca.pgpmime import PGPMIME
-        
+
         payload = MIMEMultipart()
         payload.attach(MIMEText(body_.encode('utf-8'),  _charset='utf-8'))
 
@@ -538,19 +538,19 @@ class Release(Base):
                 payload.attach(attachment)
 
         msg = PGPMIME(payload, self.active_keys, ca)
-    
+
         # we are being a bit paranoid and check that we didn't fuck up encryption or something
         for key in self.active_keys:
             assert(key.kid not in msg.as_string())
 
         to = mailinglist.email if not debug else ca.email
-            
+
         msg['To']      = to
         msg['From']    = ca.email
         msg['Subject'] = "KeyUpdate {date} [{mailinglist}]".format(date=date_str, mailinglist=mailinglist.name)
 
         return msg
-        
+
     def welcome_messages(self, tolerance=180, debug=False):
         mailinglist = self.mailinglist
         ca = self.policy.ca
@@ -617,7 +617,7 @@ class Release(Base):
 
         """
         from batzenca import session
-        
+
         if filename is None:
             filename = os.path.join(session.release_dump_path,
                                     "%s-%04d%02d%02d"%(self.mailinglist.name,
@@ -625,7 +625,7 @@ class Release(Base):
         codecs.open(filename+".yaml", encoding="utf8", mode="w").write( self.yaml )
         open(filename+".asc", "w").write( self(previous=None, check=False)[1] )
 
-        
+
     def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None,
              new_peer_tolerance_days=180, key_expiry_warning_days=30):
         """Publish this release.
@@ -641,7 +641,7 @@ class Release(Base):
         4. sending a key update message to the list
 
         5. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
-       
+
         6. a call to :func:`batzenca.database.releases.Release.dump`
 
         7. setting this release status to published.
@@ -672,7 +672,7 @@ class Release(Base):
             raise ValueError("Release '%s' is already published"%self)
 
         # 1. updating the release date of this release
-            
+
         if not debug:
             self.date = datetime.date.today()
 
@@ -694,9 +694,9 @@ class Release(Base):
 
         msg = self.release_message(previous=previous, check=check, debug=debug, attachments=attachments)
         smtpserver.sendmail(self.policy.ca.email, (msg['To'],), msg.as_string())
-       
+
         # 5. sending a key expiry message to keys that expire within ``key_expiry_warning_days`` days
-                    
+
         if key_expiry_warning_days and self.mailinglist.key_expiry_warning_msg:
             messages = self.key_expiry_messages(days=key_expiry_warning_days, debug=debug)
             for msg in messages:
