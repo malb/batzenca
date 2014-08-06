@@ -37,7 +37,7 @@ class PGPMIMEsigned(MIMEMultipart):
         if msg.is_multipart():
             # we need these to get our message correctly parsed by KMail and Thunderbird
             msg.preamble = 'This is a multi-part message in MIME format.'
-            msg.epilogue = '' 
+            msg.epilogue = ''
 
         if signer is not None:
             msg_str = flatten(msg)
@@ -51,7 +51,7 @@ class PGPMIMEsigned(MIMEMultipart):
             MIMEMultipart.__init__(self, 'signed', micalg='pgp-sha1', protocol='application/pgp-signature')
             self.attach(msg)
             self.attach(sig)
-            
+
     @classmethod
     def from_parts(cls, msg, sig):
         """Assemble a PGP/MIME signed message from its two parts: the message and the signature,
@@ -65,7 +65,7 @@ class PGPMIMEsigned(MIMEMultipart):
         self.attach(msg)
         self.attach(sig)
         return self
-            
+
     @property
     def signatures(self):
         """Return a list of keys for which this message has valid signatures.
@@ -73,7 +73,7 @@ class PGPMIMEsigned(MIMEMultipart):
         :return: a tuple of :class:`batzenca.database.keys.Key` objects
         """
         from batzenca.database.keys import Key
-        
+
         subparts = self.get_payload()
         assert(len(subparts) == 2)
         msg, sig = subparts
@@ -97,7 +97,7 @@ class PGPMIMEsigned(MIMEMultipart):
         from batzenca import EntryNotFound, Key
 
         signatures = self.signatures
-            
+
         for sig in signatures:
             if isinstance(signer, Key):
                 if key == signer:
@@ -106,7 +106,7 @@ class PGPMIMEsigned(MIMEMultipart):
                 if key.email == signer:
                     return True
         return False
-        
+
 class PGPMIMEencrypted(MIMEMultipart):
     """
     A MIME-type for PGP/MIME encrypted messages.
@@ -131,7 +131,7 @@ class PGPMIMEencrypted(MIMEMultipart):
                                   _subtype='pgp-encrypted',
                                   _encoder=encode_7or8bit)
         control.set_charset('us-ascii')
-        
+
         self.attach(control)
         self.attach(payload)
         self['Content-Disposition'] = 'attachment'
@@ -157,7 +157,7 @@ class PGPMIMEencrypted(MIMEMultipart):
                 if "pgp-signature" in sig.get_content_subtype():
                     return PGPMIMEsigned.from_parts(msg, sig)
         return msg
-        
+
 def PGPMIME(msg, recipients, signer):
     """Construct a PGP/MIME signed and encrypted message from MIME message ``msg``, signed by
     ``signer`` and encrypted for all entries of ``recipients``.
