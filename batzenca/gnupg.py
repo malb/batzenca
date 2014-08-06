@@ -82,6 +82,14 @@ class GnuPG(object):
         self.ctx.set_keylist_mode(pyme.constants.keylist.mode.SIGS)
         self.ctx.set_armor(1)
 
+        # from: https://www.gnupg.org/documentation/manuals/gpgme/Text-Mode.html#Text-Mode
+        # "Text mode is for example used for the RFC2015 signatures; note that
+        # the updated RFC 3156 mandates that the mail user agent does some
+        # preparations so that text mode is not needed anymore."
+        # Yet, Enigmail wouldn't verify our e-mails if we don't set this.
+
+        self.ctx.set_textmode(1)
+
     @property
     def home_dir(self):
         return str(self._home_dir)
