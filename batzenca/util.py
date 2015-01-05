@@ -1,12 +1,13 @@
 """
 .. module:: utils
- 
+
 .. moduleauthor:: Martin R. Albrecht <martinralbrecht+batzenca@googlemail.com>
 
 Various utility functions.
 """
 
 import sys
+
 
 def thunderbird_rules(release, mime_encode=False, mime_filename=None):
     """Return an XML string which matches that used by Thunderbird/Icedove to
@@ -48,7 +49,7 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
     else:
         return content
 
-    
+
 def plot_nkeys(mailinglists, active_only=True):
     """Write a PDF file which plots the number of (active) keys over time in all releases for all ``mailinglists``.
 
@@ -71,12 +72,13 @@ def plot_nkeys(mailinglists, active_only=True):
         else:
             y = [len(release.keys) for release in mailinglist.releases]
 
-        plt.plot(x,y, linewidth=2.5, alpha=0.9, marker='o', label=mailinglist.name)
+        plt.plot(x, y, linewidth=2.5, alpha=0.9, marker='o', label=mailinglist.name)
 
     plt.legend(loc='upper left')
-    plt.gcf().set_size_inches(20,5) 
+    plt.gcf().set_size_inches(20, 5)
     plt.gcf().autofmt_xdate()
-    plt.savefig("-".join([mailinglist.name  for mailinglist in mailinglists]) + ".pdf")
+    plt.savefig("-".join([mailinglist.name for mailinglist in mailinglists]) + ".pdf")
+
 
 def find_orphaned_keys():
     """Find keys in the GnuPG database which do not have an instance of :class:`Key` associated with it.
@@ -132,7 +134,7 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
 
     """
     from batzenca.database import MailingList, Peer
-    
+
     if peer is None:
         peer = Peer.from_email(key.email)
     if peer is None:
@@ -222,7 +224,7 @@ def smtpserverize(email):
         smtpserver.starttls()
         smtpserver.login(config.get(email, "username"), config.get(email, "password"))
     elif security.lower() == 'tls':
-        smtpserver = smtplib.SMTP_SSL(server, port=port)
+        smtpserver = smtplib.SMTP_SSL(host, port=port)
         smtpserver.ehlo(name='localhost')
         smtpserver.login(config.get(email, "username"), config.get(email, "password"))
     else:
@@ -282,4 +284,3 @@ def publish(mailinglists=None, debug=False, msg="", include_thunderbird_rules=Tr
 
     msg = msg + " " + ", ".join(published_releases)
     session.commit(verbose=True, snapshot=True, msg=msg)
-        

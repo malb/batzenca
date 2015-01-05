@@ -12,30 +12,31 @@ import datetime
 import warnings
 import codecs
 
-import sqlalchemy
-from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy import Column, Integer, Date, Boolean, ForeignKey
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from base import Base, EntryNotFound
 from peers import Peer
 from keys import Key
 
+
 class ReleaseKeyAssociation(Base):
     __tablename__ = 'releasekeyassociations'
 
-    left_id          = Column(Integer, ForeignKey('keys.id'),     primary_key=True)
+    left_id          = Column(Integer, ForeignKey('keys.id'), primary_key=True)
     right_id         = Column(Integer, ForeignKey('releases.id'), primary_key=True)
     policy_exception = Column(Boolean)
     is_active        = Column(Boolean)
 
-    key              = relationship("Key", backref=backref("release_associations", cascade="all, delete-orphan") )
-    release          = relationship("Release", backref=backref("key_associations", cascade="all, delete-orphan") )
+    key              = relationship("Key", backref=backref("release_associations", cascade="all, delete-orphan"))
+    release          = relationship("Release", backref=backref("key_associations", cascade="all, delete-orphan"))
 
     def __init__(self, key, active=True, policy_exception=False):
         self.key = key
         self.is_active = active
         self.policy_exception = policy_exception
+
 
 class Release(Base):
     """Releases are bundles of objects of type :class:`batzenca.database.keys.Key`.
@@ -43,8 +44,8 @@ class Release(Base):
     Releases contain active and inactive keys. The former are keys users are expected to use. The
     latter inform the user about invalidated keys for example by revoked signatures.
 
-    :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist for which this release
-        is intended
+    :param batzenca.database.mailinglists.MailingList mailinglist: the mailinglist for which this
+        release is intended
     :param date: the date of this release
     :param iterable active_keys: keys distributed in this release that user ought to use
     :param iterable inactive_keys: keys which are not active in this release, yet should be
