@@ -8,14 +8,16 @@ Peers are people, typically.
 from base import Base, EntryNotFound
 from keys import Key
 
-from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, UnicodeText, BigInteger
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship, backref
 
 import warnings
 
+
 class Peer(Base):
-    """This class represents a peer which participates in mailing lists. Typically, a peer
-    represents a person which has one or many PGP keys associated with her.
+    """
+    This class represents a peer which participates in mailing lists. Typically, a peer represents a
+    person which has one or many PGP keys associated with her.
 
     :param str name: the name of the peer
     :param keys: an instance of :class:`batzenca.database.keys.Key` or a list of such instances
@@ -27,17 +29,18 @@ class Peer(Base):
     .. note::
 
        The returned object was not added to any session.
+
     """
     __tablename__ = 'peers'
 
-    id    = Column(Integer, primary_key=True) #: database id
-    name  = Column(String, nullable=False) #: the peer's name
-    keys  = relationship('Key', backref=backref('peer'), order_by=Key.timestamp) #: a list of all keys associated with this peer
+    id    = Column(Integer, primary_key=True)  #: database id
+    name  = Column(String, nullable=False)     #: the peer's name
+    keys  = relationship('Key', backref=backref('peer'), order_by=Key.timestamp)  #: a list of all keys associated with this peer
 
-    data0 = Column(String) #: free form data associated with this peer
-    data1 = Column(String) #: free form data associated with this peer
-    data2 = Column(String) #: free form data associated with this peer
-    data3 = Column(String) #: free form data associated with this peer
+    data0 = Column(String)  #: free form data associated with this peer
+    data1 = Column(String)  #: free form data associated with this peer
+    data2 = Column(String)  #: free form data associated with this peer
+    data3 = Column(String)  #: free form data associated with this peer
 
     def __init__(self, name, keys, data0='', data1='', data2='', data3=''):
         self.name = name
@@ -53,7 +56,8 @@ class Peer(Base):
 
     @classmethod
     def merge(cls, left, right):
-        """Merge the two peers ``left`` and ``right`` into a new peer.
+        """
+        Merge the two peers ``left`` and ``right`` into a new peer.
 
         :param batzenca.database.peers.Peer left: first peer
         :param batzenca.database.peers.Peer right: second peer
@@ -64,6 +68,7 @@ class Peer(Base):
         .. note::
 
            The returned object was not added to any session.
+
         """
         name = left.name
         keys = set(left.keys).union(right.keys)
@@ -79,7 +84,8 @@ class Peer(Base):
 
     @classmethod
     def from_key(cls, key):
-        """Return the peer associatied with ``key`` in the database.
+        """
+        Return the peer associatied with ``key`` in the database.
 
         :param batzenca.database.keys.Key key: the key to query for
 
@@ -186,8 +192,10 @@ class Peer(Base):
         """ Return the e-mail address associated to the most rcent active key associated with this peer."""
         return str(self.key.email)
 
+
 def merge_peers(left, right):
-    """Wrapper around :func:`batzenca.database.peers.Peer.merge` which modifies the master session.
+    """
+    Wrapper around :func:`batzenca.database.peers.Peer.merge` which modifies the master session.
 
     :func:`batzenca.database.peers.Peer.merge` does not modify the master session in any way, but
     this function deletes both ``left`` and ``right`` and adds the result of

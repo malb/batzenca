@@ -9,8 +9,8 @@ from base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
 
-import datetime
 import warnings
+
 
 class Key(Base):
     """This class represents a PGP key. Distributing these keys for mailing lists is the purpose of
@@ -30,14 +30,14 @@ class Key(Base):
     """
     __tablename__ = 'keys'
 
-    id        = Column(Integer, primary_key=True)           #: database id
-    kid       = Column(String, nullable=False, unique=True) #: 8 byte pgp key id of the form 0x0123456789abcdef
-    name      = Column(String)                              #: user id
-    email     = Column(String)                              #: email as stored in key
-    timestamp = Column(Date)                                #: date it was added to the database
+    id        = Column(Integer, primary_key=True)            #: database id
+    kid       = Column(String, nullable=False, unique=True)  #: 8 byte pgp key id of the form 0x0123456789abcdef
+    name      = Column(String)                               #: user id
+    email     = Column(String)                               #: email as stored in key
+    timestamp = Column(Date)                                 #: date it was added to the database
     peer_id   = Column(Integer, ForeignKey("peers.id"))
 
-    releases    = association_proxy('release_associations', 'release') #: a list of releases this key is in
+    releases    = association_proxy('release_associations', 'release')  #: a list of releases this key is in
 
     @staticmethod
     def canonical_keyid(keyid):
@@ -51,18 +51,20 @@ class Key(Base):
             keyid = "0x%016x"%keyid
         except TypeError:
             pass
-        return "0x%016x"%(int(keyid,16) % (1<<64))
+        return "0x%016x"%(int(keyid, 16) % (1<<64))
 
     def __init__(self, keyid, name=None, email=None, timestamp=None):
         self.kid = Key.canonical_keyid(keyid)
 
         from batzenca.session import session
 
+        err_msg = "The key %s does not existand not enough information was provided for generating one without it."
+
         try:
-            _ = session.gnupg.key_get(self.kid)
+            session.gnupg.key_get(self.kid)
         except KeyError:
             if name is None or email is None or timestamp is None:
-                raise ValueError("The key %s does not exist in GnuPG and not enough information was provided for generating Key instance without it."%self.kid)
+                raise ValueError(err_msg%self.kid)
             self.name      = unicode(name.strip())
             self.email     = str(email.strip())
             self.timestamp = timestamp
@@ -217,17 +219,23 @@ class Key(Base):
         else:
             ret = []
             for fpr in res.keys():
-                keyid = Key.canonical_keyid( int("0x"+fpr[-16:],16) )
+                keyid = Key.canonical_keyid(int("0x"+fpr[-16:], 16))
                 try:
                     key = Key.from_keyid(keyid)
                 except EntryNotFound:
                     key = Key(keyid)
                 ret.append(key)
-            return tuple(ret)
-
+            ret = tuple(ret)
+        if all:
+            return ret
+        else:
+            if len(ret) > 1:
+                warnings.warn("More than one key found, picking first one.")
+            return ret[0]
 
     def __nonzero__(self):
-        """Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
+        """
+        Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
         subkey for signing and one valid subkey for encrypting.
 
         """
@@ -263,7 +271,7 @@ class Key(Base):
         """This key's fingerprint as a string in groups of four."""
         from batzenca.session import session
         s = session.gnupg.key_fingerprint(self.kid)
-        return " ".join(s[i:i+4] for i in range(0,len(s),4))
+        return " ".join(s[i:i+4] for i in range(0, len(s), 4))
 
     def __lt__(self, other):
         """A key is smaller than another key if it is older."""
@@ -330,14 +338,15 @@ class Key(Base):
 
         """
         from batzenca.session import session
-        keyids = tuple(Key.canonical_keyid( keyid ) for keyid in session.gnupg.key_signatures(self.kid))
+        keyids = tuple(Key.canonical_keyid(keyid) for
+                       keyid in session.gnupg.key_signatures(self.kid))
         sigs = []
         for keyid in keyids:
-            if int(self.kid, 16) == int(keyid,16):
+            if int(self.kid, 16) == int(keyid, 16):
                 sigs.append(self)
                 continue
             try:
-                sigs.append(Key.from_keyid(int(keyid,16)))
+                sigs.append(Key.from_keyid(int(keyid, 16)))
             except EntryNotFound:
                 sigs.append(keyid)
         return tuple(sigs)
@@ -373,7 +382,7 @@ class Key(Base):
             elif isinstance(obj, Release):
                 return obj.policy.ca
             else:
-                raise TypeError("Type '%s' of '%s' not understood."%(type(obj),obj))
+                raise TypeError("Type '%s' of '%s' not understood."%(type(obj), obj))
 
         if whitelist:
             whitelist = [extract_key(obj) for obj in whitelist]
