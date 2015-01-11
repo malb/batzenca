@@ -82,13 +82,13 @@ class Key(Base):
         except EntryNotFound:
             pass
 
-
     @classmethod
     def from_keyid(cls, keyid):
-        """Return the key with ``keyid`` from the database. If no such element is found an
-        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element is found this is
-        considered an inconsistent state of the database and a :class:`RuntimeError` exception is
-        raised.
+        """
+        Return the key with ``keyid`` from the database. If no such element is found an
+        :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
+        is found this is considered an inconsistent state of the database and a
+        :class:`RuntimeError` exception is raised.
 
         :param keyid: key id as integer or a hex string
 
@@ -110,14 +110,17 @@ class Key(Base):
             return res.first()
 
     @classmethod
-    def from_name(cls, name):
-        """Return a key with the given ``name`` from the database. If no such element is found an
+    def from_name(cls, name, all=False):
+        """
+        Return a key with the given ``name`` from the database. If no such element is found an
         :class:`batzenca.database.base.EntryNotFound` exception is raised. If more than one element
-        is found the "first" element is returned, where "first" has no particular meaning. In this
-        case a warning is issued. In particular, no guarantee is given that two consecutive runs
-        will yield the same result if more than one key has the provided ``name``.
+        is found and ``all`` is false the "first" element is returned, where "first" has no
+        particular meaning. In this case a warning is issued. In particular, no guarantee is given
+        that two consecutive runs will yield the same result if more than one key has the provided
+        ``name``. If ``all`` is true a tuple of all entries is returned.
 
         :param str name: the name the database is queried for
+        :param bool all: return all entries
 
         .. note::
 
@@ -130,25 +133,31 @@ class Key(Base):
         if res.count() == 0:
             raise ValueError("No key with name '%s' in database."%name)
         else:
-            if res.count() > 1:
-                warnings.warn("More than one key with name '%s' found, picking first one."%name)
-            return res.first()
+            if not all:
+                if res.count() > 1:
+                    warnings.warn("More than one key with name '%s' found, picking first one."%name)
+                return res.first()
+            else:
+                return tuple(r for r in res)
 
     @classmethod
-    def from_email(cls, email):
-        """Return a key with the given ``email`` address from the database.
+    def from_email(cls, email, all=False):
+        """
+        Return a key with the given ``email`` address from the database.
 
         If no such key is found an :class:`batzenca.database.base.EntryNotFound` exception is
-        raised. If more than one element is found the "first" element is returned, where "first" has
-        no particular meaning. In this case a warning is issued. In particular, no guarantee is
-        given that two consecutive runs will yield the same result if more than one key has the
-        provided ``email`` address.
+        raised. If more than one element is found and ``all`` is false the "first" element is
+        returned, where "first" has no particular meaning. In this case a warning is issued. In
+        particular, no guarantee is given that two consecutive runs will yield the same result if
+        more than one key has the provided ``email``. If ``all`` is true a tuple of all entries
+        is returned.
 
         You can query the database for the most recent key matching an e-mail address you can call::
 
             Peer.from_email(email).key
 
         :param str email: the email the database is queried for
+        :param bool all: return all entries
 
         .. note::
 
@@ -161,17 +170,24 @@ class Key(Base):
         if res.count() == 0:
             raise EntryNotFound("No key with email '%s' in database."%email)
         else:
-            if res.count() > 1:
-                warnings.warn("More than one key with email '%s' found, picking first one."%email)
-            return res.first()
+            if not all:
+                if res.count() > 1:
+                    warnings.warn("More than one key with email '%s' found, picking first one."%email)
+                return res.first()
+            else:
+                return tuple(r for r in res)
 
     @classmethod
-    def from_filename(cls, filename):
-        """Read the file ``filename`` into GnuPG and construct instances of
+    def from_filename(cls, filename, all=True):
+        """
+        Read the file ``filename`` into GnuPG and construct instances of
         :class:`batzenca.database.keys.Key` for each key contained in the file ``filename``. A tuple
-        of :class:`batzenca.database.keys.Key` objects is returned.
+        of :class:`batzenca.database.keys.Key` objects is returned if ``all`` is true. If ``all`` is
+        false, only the first entry is returned and a warning is raised if the file pointed to by
+        ``filename`` containts more than one key.
 
         :param str filename: a file name
+        :param bool all: return all entries
 
         .. note::
 
@@ -189,21 +205,31 @@ class Key(Base):
             else:
                 ret = []
                 for fpr in res.keys():
-                    keyid = Key.canonical_keyid(int("0x"+fpr[-16:],16))
+                    keyid = Key.canonical_keyid(int("0x"+fpr[-16:], 16))
                     try:
                         key = Key.from_keyid(keyid)
                     except EntryNotFound:
                         key = Key(keyid)
                     ret.append(key)
-                return tuple(ret)
+                ret = tuple(ret)
+            if all:
+                return ret
+            else:
+                if len(ret) > 1:
+                    warnings.warn("More than one key found, picking first one.")
+                return ret[0]
 
     @classmethod
-    def from_str(cls, ascii_data):
-        """Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of
+    def from_str(cls, ascii_data, all=True):
+        """
+        Read the PGP keys in ``ascii_data`` into GnuPG and construct instances of
         :class:`batzenca.database.keys.Key` for each key contained in ``ascii_data``. A tuple of
-        :class:`batzenca.database.keys.Key` objects is returned.
+        :class:`batzenca.database.keys.Key` objects is returned if ``all`` is true. If ``all`` is
+        false, only the first entry is returned and a warning is raised if ``ascii_data`` containts
+        more than one key.
 
         :param str ascii_data: PGP keys in ASCII format
+        :param bool all: return all entries
 
         .. note::
 
@@ -251,7 +277,7 @@ class Key(Base):
         return session.gnupg.key_expired(self.kid)
 
     def __str__(self):
-        return u"%s: %s <%s>"%(self.kid,self.name,self.email)
+        return u"%s: %s <%s>"%(self.kid, self.name, self.email)
 
     def __repr__(self):
         return "<Key: %s %s>"%(self.kid, self.email)

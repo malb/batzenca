@@ -109,12 +109,16 @@ class Peer(Base):
             return res.first()
 
     @classmethod
-    def from_name(cls, name):
-        """Return a peer with the given ``name`` from the database.  If more than one element is
-        found the "first" element is returned, where "first" has no particular meaning and is
-        implementation specific.  In this case a warning is issued.
+    def from_name(cls, name, all=False):
+        """
+        Return a peer with the given ``name`` from the database.  If more than one element is found and
+        ``all`` is false the "first" element is returned, where "first" has no particular
+        meaning. In this case a warning is issued. In particular, no guarantee is given that two
+        consecutive runs will yield the same result if more than one key has the provided
+        ``name``. If ``all`` is true a tuple of all entries is returned.
 
         :param str name: the name we are looking for
+        :param bool all: return all entries
 
         :raises batzenca.database.base.EntryNotFound: when no entry is found
 
@@ -129,20 +133,26 @@ class Peer(Base):
         if res.count() == 0:
             raise EntryNotFound("No peer with name '%s' in database."%name)
         else:
-            if res.count() > 1:
-                warnings.warn("More than one peer with name '%s' found, picking first one."%name)
-            return res.first()
+            if not all:
+                if res.count() > 1:
+                    warnings.warn("More than one peer with name '%s' found, picking first one."%name)
+                return res.first()
+            else:
+                return tuple(r for r in res)
 
     @classmethod
-    def from_email(cls, email):
-        """Return a peer with the given ``email`` address from the database. A peer is defined to
-        have an e-mail address associated with it, if any of the keys associated with it are for
-        said e-mail address.
+    def from_email(cls, email, all=False):
+        """
+        Return a peer with the given ``email`` address from the database. A peer is defined to have an
+        e-mail address associated with it, if any of the keys associated with it are for said e-mail
+        address.
 
-        If more than one element is found the "first" element is returned, where "first" has no
-        particular meaning and is implementation specific.  In this case a warning is issued.
+        If more than one element is found and ``all`` is false the "first" element is returned,
+        where "first" has no particular meaning and is implementation specific.  In this case a
+        warning is issued. If ``all`` is true, all results are returned.
 
         :param str email: the email address we are looking for
+        :param bool all: return all entries
 
         :raises batzenca.database.base.EntryNotFound: when no entry is found
 
@@ -157,9 +167,12 @@ class Peer(Base):
         if res.count() == 0:
             raise EntryNotFound("No peer with email '%s' in database."%email)
         else:
-            if res.count() > 1 and len(res.all()) > 1: # we might find two keys but only one peer
-                warnings.warn("More than one peer with email '%s' found, picking first one."%email)
-            return res.first()
+            if not all:
+                if res.count() > 1 and len(res.all()) > 1:  # we might find two keys but only one peer
+                    warnings.warn("More than one peer with email '%s' found, picking first one."%email)
+                return res.first()
+            else:
+                return tuple(r for r in res)
 
     def __repr__(self):
         return unicode(u"<Peer: %s, %s>"%(self.id, self.name)).encode('utf-8')
