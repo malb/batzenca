@@ -1,4 +1,5 @@
-"""Releases are bundles of objects of type :class:`batzenca.database.keys.Key` for a given
+"""
+Releases are bundles of objects of type :class:`batzenca.database.keys.Key` for a given
 :class:`batzenca.database.mailinglists.MailingList`. "Making releases" is what this library is for.
 
 .. module:: releases
@@ -39,7 +40,8 @@ class ReleaseKeyAssociation(Base):
 
 
 class Release(Base):
-    """Releases are bundles of objects of type :class:`batzenca.database.keys.Key`.
+    """
+    Releases are bundles of objects of type :class:`batzenca.database.keys.Key`.
 
     Releases contain active and inactive keys. The former are keys users are expected to use. The
     latter inform the user about invalidated keys for example by revoked signatures.
@@ -59,7 +61,8 @@ class Release(Base):
 
     id             = Column(Integer, primary_key=True)
     mailinglist_id = Column(Integer, ForeignKey('mailinglists.id'))
-    mailinglist    = relationship("MailingList", backref=backref("releases", order_by="Release.date", cascade="all, delete-orphan"))
+    mailinglist    = relationship("MailingList",
+                                  backref=backref("releases", order_by="Release.date", cascade="all, delete-orphan"))
     date           = Column(Date)
     published      = Column(Boolean)
 
@@ -137,8 +140,8 @@ class Release(Base):
 
         release = Release(mailinglist=self.mailinglist,
                           date=date,
-                          active_keys = active_keys,
-                          inactive_keys = inactive_keys,
+                          active_keys=active_keys,
+                          inactive_keys=inactive_keys,
                           policy=policy)
 
         if deactivate_invalid:
@@ -153,7 +156,8 @@ class Release(Base):
         return release
 
     def verify(self, ignore_exceptions=False):
-        """Check if all active keys in this release pass the policy check.
+        """
+        Check if all active keys in this release pass the policy check.
 
         :param boolean ignore_exceptions: keys may have a policy exception which means that they
            pass this test even though they do violate the policy. By default active keys with an
@@ -165,7 +169,12 @@ class Release(Base):
                 self.policy.check(assoc.key)
 
     def __repr__(self):
-        s = "<Release: %s, %s (%s), %s (%s + %s) keys>"%(self.id, self.date, self.mailinglist, len(self.key_associations), len(self.active_keys), len(self.inactive_keys))
+        s = "<Release: %s, %s (%s), %s (%s + %s) keys>"%(self.id,
+                                                         self.date,
+                                                         self.mailinglist,
+                                                         len(self.key_associations),
+                                                         len(self.active_keys),
+                                                         len(self.inactive_keys))
         return unicode(s).encode('utf-8')
 
     def __str__(self):
@@ -176,7 +185,7 @@ class Release(Base):
         for key in self.keys:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", PolicyViolation)
-                if policy.check_ca_signature(key) == False:
+                if not policy.check_ca_signature(key):
                     inact_no_sig += 1
                     continue
 
@@ -213,7 +222,7 @@ class Release(Base):
             other = self.prev
 
         keys_prev = set(other.active_keys + self.inactive_keys)
-        keys_curr = set(self.active_keys) # keys that are in this release
+        keys_curr = set(self.active_keys)  # keys that are in this release
 
         # keys that used to be in but are not any more
         keys_out = keys_prev.difference(keys_curr)
@@ -248,7 +257,8 @@ class Release(Base):
         if self.id is None:
             return [assoc for assoc in self.key_associations if assoc.is_active]
         from batzenca.session import session
-        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True).all()
+        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id,
+                                                                                ReleaseKeyAssociation.is_active == True).all()
 
     @property
     def inactive_keys(self):
@@ -256,7 +266,8 @@ class Release(Base):
         if self.id is None:
             return [assoc.key for assoc in self.key_associations if not assoc.is_active]
         from batzenca.session import session
-        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == False).all()
+        return session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.right_id == self.id,
+                                                                                ReleaseKeyAssociation.is_active == False).all()
 
     def deactivate_invalid(self):
         """Deactivate those keys which evaluate to false and those keys which are not signed by the
@@ -277,11 +288,11 @@ class Release(Base):
                     assoc.is_active = False
 
     def delete_old_inactive_keys(self, releasecount=5):
-        """Remove those inactive keys which have been inactive for a while.
+        """
+        Remove those inactive keys which have been inactive for a while.
 
         :param boolean releasecount: the number of releases for which a key must have been inactive
             to be removed.
-
         """
         if self.published:
             raise ValueError("Release '%s' is already published and should not be modified."%self)
@@ -314,7 +325,8 @@ class Release(Base):
             raise ValueError("Key '%s' is not in release '%s'"%(key, self))
 
         from batzenca.session import session
-        res = session.db_session.query(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == key.id, ReleaseKeyAssociation.right_id == self.id)
+        res = session.db_session.query(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == key.id,
+                                                                     ReleaseKeyAssociation.right_id == self.id)
         if res.count() > 1:
             raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(key, self))
         if res.count() == 0:
@@ -334,7 +346,8 @@ class Release(Base):
         assoc.policy_exception = True
 
     def has_exception(self, key):
-        """Return ``True`` if the provided key has a policy exception.
+        """
+        Return ``True`` if the provided key has a policy exception.
 
         :param batzenca.database.keys.Key key: the key to check
 
@@ -343,7 +356,8 @@ class Release(Base):
         return assoc.policy_exception
 
     def is_active(self, key):
-        """Return ``True`` if the provided key is active in this release,
+        """
+        Return ``True`` if the provided key is active in this release,
 
         :param batzenca.database.keys.Key key: the key to check
 
@@ -371,6 +385,14 @@ class Release(Base):
         self.add_key(peer.key, active=True, check=True)
 
     def add_key(self, key, active=True, check=True):
+        """
+        Add a key to this release
+
+        :param key: the key to add
+        :param active: should the key be active
+        :param check: check if key matches policy
+
+        """
         if self.published:
             raise ValueError("Release '%s' is already published and should not be modified."%self)
 
@@ -398,7 +420,9 @@ class Release(Base):
             raise TypeError("Cannot handle objects of type '%s'"%type(obj))
 
         if isinstance(obj, Key):
-            res = session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == obj.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
+            res = session.db_session.query(Key).join(ReleaseKeyAssociation).filter(ReleaseKeyAssociation.left_id == obj.id,
+                                                                                   ReleaseKeyAssociation.right_id == self.id,
+                                                                                   ReleaseKeyAssociation.is_active == True)
             if res.count() == 0:
                 return False
             elif res.count() == 1:
@@ -407,7 +431,10 @@ class Release(Base):
                 raise RuntimeError("The key '%s' is associated with the release '%' more than once; the database is in an inconsistent state."%(obj, self))
 
         elif isinstance(obj, Peer):
-            res = session.db_session.query(Peer).join(Key).join(ReleaseKeyAssociation).filter(Key.peer_id == obj.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
+            res = session.db_session.query(Peer).join(Key).join(ReleaseKeyAssociation).filter(Key.peer_id == obj.id,
+                                                                                              ReleaseKeyAssociation.left_id == Key.id,
+                                                                                              ReleaseKeyAssociation.right_id == self.id,
+                                                                                              ReleaseKeyAssociation.is_active == True)
             if res.count() == 0:
                 return False
             elif res.count() == 1:
@@ -437,22 +464,23 @@ class Release(Base):
 
         """
         s = []
-        s.append( "mailinglist: %s"%self.mailinglist.email )
-        s.append( "date:        %04d-%02d-%02d"%(self.date.year, self.date.month, self.date.day) )
-        s.append( "ca:          %s"%self.policy.ca.kid )
+        s.append("mailinglist: %s"%self.mailinglist.email)
+        s.append("date:        %04d-%02d-%02d"%(self.date.year, self.date.month, self.date.day))
+        s.append("ca:          %s"%self.policy.ca.kid)
 
-        s.append( "active keys:" )
+        s.append("active keys:")
         for key in self.active_keys:
-            s.append( "  - %s"%key.kid )
-        s.append( "" )
-        s.append( "inactive keys:" )
+            s.append("  - %s"%key.kid)
+        s.append("")
+        s.append("inactive keys:")
         for key in self.inactive_keys:
-            s.append( "  - %s"%key.kid )
-        s.append( "" )
+            s.append("  - %s"%key.kid)
+        s.append("")
         return "\n".join(s)
 
     def expiring_keys(self, days=30):
-        return tuple(key for key in self.active_keys if key.expires and key.expires < self.date + datetime.timedelta(days=days))
+        return tuple(key for key in self.active_keys
+                     if key.expires and key.expires < self.date + datetime.timedelta(days=days))
 
     def __call__(self, previous=None, check=True, still_alive=False):
         """Return tuple representing this release as a (message, keys) pair.
