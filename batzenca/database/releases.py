@@ -311,11 +311,7 @@ class Release(Base):
             elif key.expires and key.expires < self.date:
                 delete_keys.append(key)
         for key in delete_keys:
-            assoc = self._get_assoc(key)
-            self.key_associations.remove(assoc)
-            from batzenca.session import session
-            session.db_session.delete(assoc)
-
+            self.delete_key(key)
 
     def _get_assoc(self, key):
         if key.id is None or self.id is None:
@@ -406,6 +402,21 @@ class Release(Base):
             self.policy.check(key)
 
         self.key_associations.append(ReleaseKeyAssociation(key=key, active=active))
+
+    def delete_key(self, key):
+        """
+        Remove a key from this release.
+
+        :param key: the key to be removed
+
+        """
+        if self.published:
+            raise ValueError("Release '%s' is already published and should not be modified."%self)
+
+        assoc = self._get_assoc(key)
+        self.key_associations.remove(assoc)
+        from batzenca.session import session
+        session.db_session.delete(assoc)
 
     def __contains__(self, obj):
         from batzenca.session import session
