@@ -220,6 +220,9 @@ class Release(Base):
         """
         if other is None:
             other = self.prev
+            # if there is no previous release, fail gracefully
+            if other is None:
+                return set(), set(), set(), set(), set()
 
         keys_prev = set(other.active_keys + self.inactive_keys)
         keys_curr = set(self.active_keys)  # keys that are in this release
