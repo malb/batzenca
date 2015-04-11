@@ -234,13 +234,12 @@ class Release(Base):
 
         peers_prev = set([Peer.from_key(key) for key in keys_prev])
         peers_curr = set([Peer.from_key(key) for key in keys_curr])
-        peers_in   = set([Peer.from_key(key) for key in keys_in  ])
-        peers_out  = set([Peer.from_key(key) for key in keys_out ])
+        peers_in   = set([Peer.from_key(key) for key in keys_in])
+        peers_out  = set([Peer.from_key(key) for key in keys_out])
 
         peers_joined  = peers_curr.difference(peers_prev)
         peers_changed = peers_in.intersection(peers_out)
         peers_left    = peers_prev.difference(peers_curr)
-
 
         return keys_in, keys_out, peers_joined, peers_changed, peers_left
 
@@ -371,7 +370,10 @@ class Release(Base):
             raise ValueError("Key '%s' of peer '%s' is already in release '%s'"%(peer.key, peer, self))
 
         from batzenca.session import session
-        res = session.db_session.query(ReleaseKeyAssociation).join(Key).join(Peer).filter(Key.peer_id == peer.id, ReleaseKeyAssociation.left_id == Key.id, ReleaseKeyAssociation.right_id == self.id, ReleaseKeyAssociation.is_active == True)
+        res = session.db_session.query(ReleaseKeyAssociation).join(Key).join(Peer).filter(Key.peer_id == peer.id,
+                                                                                          ReleaseKeyAssociation.left_id == Key.id,
+                                                                                          ReleaseKeyAssociation.right_id == self.id,
+                                                                                          ReleaseKeyAssociation.is_active == True)
 
         for assoc in res.all():
             if not bool(assoc.key):
@@ -521,7 +523,7 @@ class Release(Base):
         sorted_keys = lambda keys: sorted(keys, key=lambda x: x.name.lower())
 
         keys = []
-        for i,key in enumerate(sorted_keys(self.active_keys)):
+        for i, key in enumerate(sorted_keys(self.active_keys)):
             keys.extend(Release._format_entry(i, key))
         keys = "\n".join(keys)
 
@@ -531,21 +533,21 @@ class Release(Base):
         if previous:
             keys_in, keys_out, peers_joined, peers_changed, peers_left = self.diff(previous)
 
-            keys_in  = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(sorted_keys(keys_in)) ], tuple()))
-            keys_out = "\n".join(sum([self._format_entry(i, key) for i,key in enumerate(sorted_keys(keys_out))], tuple()))
+            keys_in  = "\n".join(sum([self._format_entry(i, key) for i, key in enumerate(sorted_keys(keys_in))], tuple()))
+            keys_out = "\n".join(sum([self._format_entry(i, key) for i, key in enumerate(sorted_keys(keys_out))], tuple()))
 
             peers_joined  = ", ".join(peer.name for peer in peers_joined)
             peers_changed = ", ".join(peer.name for peer in peers_changed)
             peers_left    = ", ".join(peer.name for peer in peers_left)
         else:
-            keys_in, keys_out, peers_joined, peers_changed, peers_left = "","","","",""
+            keys_in, keys_out, peers_joined, peers_changed, peers_left = "", "", "", "", ""
 
-        msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name, keys=keys,
-                                                     keys_in       = keys_in,
-                                                     keys_out      = keys_out,
-                                                     peers_in      = peers_joined,
+        msg = self.mailinglist.key_update_msg.format(mailinglist=self.mailinglist.name,keys=keys,
+                                                     keys_in = keys_in,
+                                                     keys_out = keys_out,
+                                                     peers_in = peers_joined,
                                                      peers_changed = peers_changed,
-                                                     peers_out     = peers_left,
+                                                     peers_out = peers_left,
                                                      dead_man_switch = self.mailinglist.dead_man_switch_msg if still_alive else "",
                                                      ca=self.policy.ca.name,
                                                      ca_email=self.policy.ca.email)
@@ -623,7 +625,7 @@ class Release(Base):
                 msg['To']      = to
                 msg['From']    = ca.email
                 msg['Subject'] = "welcome to [{mailinglist}]".format(mailinglist=mailinglist.name)
-                M.append( msg )
+                M.append(msg)
         return tuple(M)
 
     def key_expiry_messages(self, days=30, debug=False):
