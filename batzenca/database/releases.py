@@ -610,6 +610,10 @@ class Release(Base):
         for peer in self.peers:
             was_recently_active = False
             for key in peer.keys:
+                if key in self.prev:
+                    # sometimes previous releases were a long time ago
+                    was_recently_active = True
+                # now deal with any other releases
                 if any(rel.date > tolerance for rel in key.releases if rel.mailinglist == self.mailinglist and rel != self):
                     was_recently_active = True
                     break
