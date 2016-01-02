@@ -6,7 +6,7 @@
 Mailing lists is what we do the work for.
 """
 
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, UnicodeText
+from sqlalchemy import Column, Boolean, Integer, String, Date, ForeignKey, UnicodeText
 from sqlalchemy.orm import relationship
 
 from base import Base, EntryNotFound
@@ -115,6 +115,7 @@ class MailingList(Base):
 
     policy_id   = Column(Integer, ForeignKey('policies.id'))
     policy      = relationship("Policy")
+    active      = Column(Boolean)
 
     def __init__(self, name, email, policy=None, description='', new_member_msg='', key_update_msg='', key_expiry_warning_msg='', dead_man_switch_msg=''):
         self.name = name
@@ -141,7 +142,7 @@ class MailingList(Base):
     def all(cls):
         """Return all mailing lists from the database"""
         from batzenca import session
-        res = session.db_session.query(MailingList)
+        res = session.db_session.query(cls).filter(cls.active)
         return tuple(res.all())
 
     def __str__(self):
