@@ -140,7 +140,7 @@ class MailingList(Base):
 
     @classmethod
     def all(cls):
-        """Return all mailing lists from the database"""
+        """Return all active mailing lists from the database"""
         from batzenca import session
         res = session.db_session.query(cls).filter(cls.active)
         return tuple(res.all())
