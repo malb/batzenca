@@ -50,6 +50,43 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
         return content
 
 
+def gpgconf_rules(release, mime_encode=False, mime_filename=None):
+    """Return a string which matches that used GnuPG in gpg.conf to define groups."
+
+    :param batzenca.database.releases.Release release: the target release
+
+    :param boolean mime_encode: MIME encode before outputting
+
+    :param str mime_filename: filename used for MIME encoding (default:
+        '<mailinglist.name>_group_<year>-<month>-<day>.conf')
+
+    """
+    import StringIO
+    fh = StringIO.StringIO()
+
+    key_ids = [str(key.kid) for key in release.active_keys]
+    fh.write("group %s = %s\n"%(release.mailinglist.email, " ".join(key_ids)))
+    content = fh.getvalue()
+    fh.close()
+
+    if mime_encode:
+        from email import encoders
+        from email.mime.base import MIMEBase
+
+        gpg_rules = MIMEBase('text', 'plain')
+        gpg_rules.set_payload(content)
+        encoders.encode_base64(gpg_rules)
+
+        if mime_filename is None:
+            mime_filename = "%s_group_%04d%02d%02d.conf"%(release.mailinglist.name,
+                                                          release.date.year, release.date.month, release.date.day)
+
+        gpg_rules.add_header('Content-Disposition', 'attachment', filename=mime_filename)
+        return gpg_rules
+    else:
+        return content
+
+
 def plot_nkeys(mailinglists, active_only=True):
     """Write a PDF file which plots the number of (active) keys over time in all releases for all ``mailinglists``.
 
