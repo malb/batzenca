@@ -43,7 +43,7 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
         if mime_filename is None:
             mime_filename = "%s_rules_%04d%02d%02d.xml"%(release.mailinglist.name,
                                                          release.date.year, release.date.month, release.date.day)
-        
+
         xml_rules.add_header('Content-Disposition', 'attachment', filename=mime_filename)
         return xml_rules
     else:
@@ -129,7 +129,7 @@ def find_orphaned_keys():
     for key in session.gnupg.ctx.op_keylist_all(None, 0):
         dbkey = None
         for sk in key.subkeys:
-            try:            
+            try:
                 dbkey = Key.from_keyid(int(sk.keyid,16))
                 break
             except EntryNotFound:
@@ -137,6 +137,7 @@ def find_orphaned_keys():
         if dbkey is None:
             orphans.append(Key(int(key.subkeys[0].keyid,16)))
     return tuple(orphans)
+
 
 def import_new_key(key, peer=None, mailinglists=None, force=False):
     """Import a new ``key`` for ``peer``.
@@ -156,7 +157,7 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
     5. add the key the current release
 
     6. delete all superfluous signatures
-    
+
     :param batzenca.database.keys.Key key: the new key
 
     :param batzenca.database.peers.Peer peer: the peer to use in case it cannot
@@ -185,13 +186,13 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
         mailinglists = MailingList.all()
 
     mailinglists = [m for m in mailinglists if force or (peer in m.current_release)]
-        
+
     # 1. check
-            
+
     for mailinglist in mailinglists:
         if not mailinglist.policy.check(key, check_ca_signature=False):
             raise ValueError("key %s does not pass policy check for %s"%(key, mailinglist))
-    
+
     # 2. update peer
 
     if peer.key and peer.key != key:
@@ -203,13 +204,13 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
     # 5. add the key the current release
 
     signatures = set([key])
-    
+
     for mailinglist in mailinglists:
         print "#",mailinglist,"#"
 
         key.sign(mailinglist.policy.ca)
         signatures.add(mailinglist.policy.ca)
-        
+
         if mailinglist.current_release.published:
             _ = mailinglist.new_release()
 
@@ -239,7 +240,7 @@ def smtpserverize(email):
         port: 25
         username: user
         password: secret!
-        security: starttls 
+        security: starttls
 
     Supported values for security are "starttls" and "tls".
 
@@ -248,7 +249,7 @@ def smtpserverize(email):
     import smtplib
     import os
     from batzenca import session
-    
+
     config = ConfigParser.ConfigParser()
     config.read(os.path.join(session.path, "smtp.cfg"))
     host = config.get(email, 'host')
@@ -310,7 +311,7 @@ def publish(mailinglists=None, debug=False, msg="", include_thunderbird_rules=Tr
             smtpservers[email] = smtpserver
 
         release.send(smtpserver, debug=debug, attachments=attachments)
-        
+
         published_releases.append(mailinglist.name)
 
         print "published"
