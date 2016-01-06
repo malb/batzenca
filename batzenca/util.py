@@ -319,5 +319,48 @@ def publish(mailinglists=None, debug=False, msg="", attach=[]):
     for smtpserver in smtpservers.itervalues():
         smtpserver.quit()
 
-    msg = msg + " " + ", ".join(published_releases)
-    session.commit(verbose=True, snapshot=True, msg=msg)
+    if not debug:
+        msg = msg + " " + ", ".join(published_releases)
+        session.commit(verbose=True, snapshot=True, msg=msg)
+
+
+def new_ca_key(new_key, old_key):
+    """Switch CA key from ``old_key`` to ``new_key`` in all mailing lists with a policy matching
+    ``old_key``.
+
+    :param new_key: new CA key
+    :param old_key: old CA key
+
+    """
+    import datetime
+    from batzenca import MailingList, Policy, EntryNotFound
+
+    mailinglists = [m for m in MailingList.all() if m.policy.ca == old_key]
+    old_policies = set([m.policy for m in mailinglists])
+
+    policy_map = {}
+    for old_policy in old_policies:
+        new_policy = Policy(old_policy.name,
+                            datetime.date.today(),
+                            new_key,
+                            old_policy.key_len,
+                            old_policy.key_lifespan,
+                            old_policy.algorithms)
+        policy_map[old_policy] = new_policy
+
+    for mailinglist in mailinglists:
+        if mailinglist.current_release.published:
+            mailinglist.new_release()
+        release = mailinglist.current_release
+        policy = policy_map[release.policy]
+        release.policy = policy
+        mailinglist.policy = policy
+
+        for key in release.active_keys:
+            if key.is_signed_by(old_key):
+                key.sign(new_key)
+
+    try:
+        import_new_key(new_key)  # update CA as member
+    except EntryNotFound:  # sometimes the CA is no peer
+        pass
