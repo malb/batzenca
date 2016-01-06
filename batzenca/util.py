@@ -269,23 +269,21 @@ def smtpserverize(email):
         raise ValueError("value '%s' for security not understood. Supported options are 'starttls' and 'tls'."%security)
     return smtpserver
 
-def publish(mailinglists=None, debug=False, msg="", include_thunderbird_rules=True):
+
+def publish(mailinglists=None, debug=False, msg="", attach=[]):
     """Publish all outstanding releases.
 
     :param iterable mailinglists: a list of mailing lists to consider or ``None`` for all.
-
     :param boolean debug: do not send e-mail to lists but to CA e-mail address.
-
     :param string msg: message to be included in git commit
-
-    :param boolean include_thunderbird_rules: attach XML formated rules for Thunderbird/Icedove
-
+    :param list attach: each function in ``attach`` will be called on ``release`` with parameter
+        ``mime_encode=True`` and the output attached to the release.
     """
     from batzenca import MailingList, session
-    
+
     if mailinglists is None:
         mailinglists = MailingList.all()
-    
+
     published_releases = []
     smtpservers = {}
 
@@ -297,13 +295,14 @@ def publish(mailinglists=None, debug=False, msg="", include_thunderbird_rules=Tr
             print
             continue
 
-        if include_thunderbird_rules:
-            attachments = (thunderbird_rules(release, mime_encode=True),)
-        else:
-            attachments = tuple()
+        attachments = []
+        for attach_fn in attach:
+            attachments.append(attach_fn(release, mime_encode=True))
+
+        attachments = tuple(attachments)
 
         email = release.policy.ca.email
-        
+
         if email in smtpservers:
             smtpserver = smtpservers[email]
         else:
