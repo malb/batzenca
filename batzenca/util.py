@@ -26,7 +26,7 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
 
     fh.write("""<?xml version="1.0" ?>\n""")
     fh.write("  <pgpRuleList>\n")
-    key_ids = [str(key.kid) for key in release.active_keys]
+    key_ids = ["0x"+str(key.fingerprint.replace(" ", "")) for key in release.active_keys]
     fh.write("""    <pgpRule email="{%s}" encrypt="2" keyId="%s" negateRule="0" pgpMime="2" sign="2"/>\n"""%(release.mailinglist.email,", ".join(key_ids)))
     fh.write("  </pgpRuleList>\n")
     content = fh.getvalue()
