@@ -567,6 +567,7 @@ class GnuPG(object):
             "NEED_PASSPHRASE" : None,
             "GOOD_PASSPHRASE" : None,
             "USERID_HINT"     : None,
+            "KEY_CONSIDERED"  : None,
             "EOF"             : None,
 
             "signer"          : signer_key,
