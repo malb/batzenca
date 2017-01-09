@@ -438,6 +438,7 @@ class GnuPG(object):
             "GOT_IT"          : None,
             "NEED_PASSPHRASE" : None,
             "GOOD_PASSPHRASE" : None,
+            "KEY_CONSIDERED"  : None,
             "USERID_HINT"     : None,
             "EOF"             : None,
             "skip"            : 0,
