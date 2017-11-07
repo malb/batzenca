@@ -139,7 +139,7 @@ def find_orphaned_keys():
     return tuple(orphans)
 
 
-def import_new_key(key, peer=None, mailinglists=None, force=False):
+def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy=False):
     """Import a new ``key`` for ``peer``.
 
     This function does the following for all mailing lists on which the provided
@@ -170,6 +170,8 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
         matching peer has a key in the current release. If ``force==True`` the
         key is added unconditionally.
 
+    :param ignore_policy: ignore policy violations.
+
     """
     from batzenca.database import MailingList, Peer
 
@@ -189,9 +191,10 @@ def import_new_key(key, peer=None, mailinglists=None, force=False):
 
     # 1. check
 
-    for mailinglist in mailinglists:
-        if not mailinglist.policy.check(key, check_ca_signature=False):
-            raise ValueError("key %s does not pass policy check for %s"%(key, mailinglist))
+    if not ignore_policy:
+        for mailinglist in mailinglists:
+            if not mailinglist.policy.check(key, check_ca_signature=False):
+                raise ValueError("key %s does not pass policy check for %s"%(key, mailinglist))
 
     # 2. update peer
 
