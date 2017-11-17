@@ -432,17 +432,18 @@ class GnuPG(object):
         out = pyme.core.Data()
 
         helper = {
-            "GET_LINE"        : {"keyedit.prompt" : ("lsign" if local else "sign", "quit")},
-            "GET_BOOL"        : {"sign_uid.okay" : "Y", "keyedit.save.okay" : "Y", "keyedit.sign_all.okay" : "Y"},
-            "ALREADY_SIGNED"  : None,
-            "GOT_IT"          : None,
-            "NEED_PASSPHRASE" : None,
-            "GOOD_PASSPHRASE" : None,
-            "KEY_CONSIDERED"  : None,
-            "USERID_HINT"     : None,
-            "EOF"             : None,
-            "skip"            : 0,
-            "data"            : out,
+            "GET_LINE"         : {"keyedit.prompt" : ("lsign" if local else "sign", "quit")},
+            "GET_BOOL"         : {"sign_uid.okay" : "Y", "keyedit.save.okay" : "Y", "keyedit.sign_all.okay" : "Y"},
+            "ALREADY_SIGNED"   : None,
+            "GOT_IT"           : None,
+            "NEED_PASSPHRASE"  : None,
+            "GOOD_PASSPHRASE"  : None,
+            "KEY_CONSIDERED"   : None,
+            "USERID_HINT"      : None,
+            "EOF"              : None,
+            "PINENTRY_LAUNCHED": None,
+            "skip"             : 0,
+            "data"             : out,
         }
 
         self.ctx.signers_clear()
