@@ -5,8 +5,8 @@
 
 Peers are people, typically.
 """
-from base import Base, EntryNotFound
-from keys import Key
+from .base import Base, EntryNotFound
+from .keys import Key
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship, backref

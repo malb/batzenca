@@ -17,9 +17,9 @@ from sqlalchemy import Column, Integer, Date, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from base import Base, EntryNotFound
-from peers import Peer
-from keys import Key
+from .base import Base, EntryNotFound
+from .peers import Peer
+from .keys import Key
 
 
 class ReleaseKeyAssociation(Base):
@@ -175,7 +175,7 @@ class Release(Base):
                                                          len(self.key_associations),
                                                          len(self.active_keys),
                                                          len(self.inactive_keys))
-        return unicode(s).encode('utf-8')
+        return s
 
     def __str__(self):
         from batzenca.database.policies import PolicyViolation

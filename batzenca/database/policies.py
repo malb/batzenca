@@ -13,10 +13,10 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 import warnings
 
-from base import Base, EntryNotFound
-from keys import Key
-from peers import Peer
-from mailinglists import MailingList
+from .base import Base, EntryNotFound
+from .keys import Key
+from .peers import Peer
+from .mailinglists import MailingList
 
 class PolicyViolation(Warning):
     """This warning is issued a :class:`batzenca.database.keys.Key` violates the conditions set by a

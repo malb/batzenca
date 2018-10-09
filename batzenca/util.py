@@ -180,9 +180,9 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
     if peer is None:
         raise ValueError("No peer provided")
 
-    print " key:: %s"%key
-    print "peer:: %s"%peer
-    print
+    print(" key:: %s"%key)
+    print("peer:: %s"%peer)
+    print()
 
     if mailinglists is None:
         mailinglists = MailingList.all()
@@ -209,7 +209,7 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
     signatures = set([key])
 
     for mailinglist in mailinglists:
-        print "#",mailinglist,"#"
+        print("# " + mailinglist + " #")
 
         key.sign(mailinglist.policy.ca)
         signatures.add(mailinglist.policy.ca)
@@ -221,15 +221,15 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
         if key not in mailinglist.current_release:
             mailinglist.current_release.add_key(key)
 
-        print "done"
+        print("done")
         print
 
     # 6. delete all superfluous signatures
     key.clean(signatures)
 
-    print "signatures:"
+    print("signatures:")
     for signature in key.signatures:
-        print "-", unicode(signature)
+        print("-", unicode(signature))
 
 def smtpserverize(email):
     """Read BATZENCA_DIR/smtp.cfg and construct smtpserver object for entry matching ``email``
@@ -291,7 +291,7 @@ def publish(mailinglists=None, debug=False, msg="", attach=[]):
     smtpservers = {}
 
     for i, mailinglist in enumerate(mailinglists):
-        print "%3d. [%s]"%(i, mailinglist),
+        print("%3d. [%s]"%(i, mailinglist), end=None)
         release = mailinglist.current_release
 
         if release.published:
@@ -316,7 +316,7 @@ def publish(mailinglists=None, debug=False, msg="", attach=[]):
 
         published_releases.append(mailinglist.name)
 
-        print "published"
+        print("published")
         sys.stdout.flush()
 
     for smtpserver in smtpservers.itervalues():

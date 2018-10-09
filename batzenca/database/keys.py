@@ -5,7 +5,7 @@
 
 Keys represent PGP keys and are typically stored in the database.
 """
-from base import Base, EntryNotFound
+from .base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
 

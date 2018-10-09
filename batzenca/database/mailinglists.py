@@ -9,10 +9,10 @@ Mailing lists is what we do the work for.
 from sqlalchemy import Column, Boolean, Integer, String, Date, ForeignKey, UnicodeText
 from sqlalchemy.orm import relationship
 
-from base import Base, EntryNotFound
-from releases import Release, ReleaseKeyAssociation
-from keys import Key
-from peers import Peer
+from .base import Base, EntryNotFound
+from .releases import Release, ReleaseKeyAssociation
+from .keys import Key
+from .peers import Peer
 
 import warnings
 

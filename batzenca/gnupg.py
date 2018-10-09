@@ -73,10 +73,10 @@ class GnuPG(object):
         if home_dir is not None:
             if not os.path.exists(home_dir):
                 os.mkdir(home_dir)
-                os.chmod(home_dir, 0700)
+                os.chmod(home_dir, 0o700)
 
             for engine in pyme.core.get_engine_info():
-                pyme.core.set_engine_info(engine.protocol, engine.file_name, home_dir)
+                pyme.core.set_engine_info(engine.protocol, engine.file_name.encode("utf-8"), home_dir.encode("utf-8"))
 
         self.ctx = pyme.core.Context()
         self.ctx.set_keylist_mode(pyme.constants.keylist.mode.SIGS)
@@ -125,7 +125,7 @@ class GnuPG(object):
                 return key
             except AttributeError:
                 raise KeyError("Key '%s' not found."%keyid)
-        except pyme.errors.GPGMEError, e:
+        except pyme.errors.GPGMEError as e:
             raise KeyError("Key '%s' not found."%keyid)
 
     def have_secret_key(self, keyid):
@@ -151,7 +151,7 @@ class GnuPG(object):
                     return True
             except AttributeError:
                 return False
-        except pyme.errors.GPGMEError, e:
+        except pyme.errors.GPGMEError as e:
             return False
 
     def key_uid(self, keyid):
@@ -161,7 +161,7 @@ class GnuPG(object):
         :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         uids = self.key_get(keyid).uids
-        return UID(unicode(uids[0].name, 'utf-8'), unicode(uids[0].email, 'utf-8'), unicode(uids[0].comment, 'utf-8'))
+        return UID(uids[0].name,  uids[0].email, uids[0].comment)
 
     def key_okay(self, keyid):
         """
@@ -251,7 +251,6 @@ class GnuPG(object):
         key = self.key_get(keyid)
         return min([subkey.length for subkey in key.subkeys])
 
-
     def key_any_uid_is_signed_by(self, keyid, signer_keyid):
         """
         Return ``True`` if any uid of the key ``keyid`` is signed by the key ``signer_keyid``.
@@ -304,7 +303,6 @@ class GnuPG(object):
         key = self.key_get(keyid)
         return key.subkeys[0].fpr
 
-
     def key_okay_encrypt(self, keyid):
         """
         Return ``True`` if the key ``keyid`` can be used for encryption.
@@ -312,7 +310,7 @@ class GnuPG(object):
         :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
         key = self.key_get(keyid)
-        if  not self.key_okay(key) or not self.key_validity(key) >= 4:
+        if not self.key_okay(key) or not self.key_validity(key) >= 4:
             return False
         return True
 
@@ -326,7 +324,7 @@ class GnuPG(object):
         export_keys = Data()
         keys = [self.key_get(keyid) for keyid in keyids]
         self.ctx.op_export_keys(keys, 0, export_keys)
-        export_keys.seek(0,0)
+        export_keys.seek(0, 0)
         return export_keys.read()
 
     def msg_sign(self, msg, keyid):
@@ -350,7 +348,7 @@ class GnuPG(object):
 
         self.ctx.op_sign(msg, sig, pyme.constants.sig.mode.DETACH)
 
-        sig.seek(0,0)
+        sig.seek(0, 0)
         return sig.read()
 
     def msg_encrypt(self, msg, keyids, always_trust=False):
@@ -391,7 +389,7 @@ class GnuPG(object):
             self.ctx.op_decrypt(cipher, plain)
             plain.seek(0,0)
             return plain.read()
-        except pyme.errors.GPGMEError, msg:
+        except pyme.errors.GPGMEError as msg:
             raise ValueError(msg)
 
     def sig_verify(self, msg, sig):
@@ -649,7 +647,7 @@ def edit_fnc(stat, args, helper):
                         return "Y"
                 return "N"
 
-            print data
-            return raw_input("(%s) %s > " % (stat2str[stat], args))
+            print(data)
+            return input("(%s) %s > " % (stat2str[stat], args))
     except EOFError:
         pass

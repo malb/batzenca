@@ -1,4 +1,4 @@
-from database.base import Base
+from .database.base import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -18,14 +18,14 @@ releases
         self.path = path
         if not os.path.exists(path):
             os.mkdir(path)
-            os.chmod(path, 0700)
+            os.chmod(path, 0o700)
 
         if not os.path.isdir(path):
             raise IOError("Cannot create configuration directory '%' because a file with the same name exists already."%path)
 
         if not os.path.exists(self.release_dump_path):
             os.mkdir(self.release_dump_path)
-            os.chmod(self.release_dump_path, 0700)
+            os.chmod(self.release_dump_path, 0o700)
 
         if not os.path.isdir(self.release_dump_path):
             raise IOError("Cannot create directory '%' because a file with the same name exists already."%self.release_dump_path)
@@ -37,7 +37,7 @@ releases
         self.db_session =  sessionmaker(bind=self.db_engine)()
         self.db_session.commit()
 
-        from gnupg import GnuPG
+        from .gnupg import GnuPG
         self.gnupg = GnuPG(path + os.path.sep + "gnupg")
 
         try:
@@ -81,11 +81,11 @@ releases
         repo.git.add("batzenca.db")
         repo.git.add("gnupg")
         if verbose:
-            print repo.git.status()
+            print(repo.git.status())
         if repo.is_dirty():
             out = repo.git.commit(m=msg)
             if verbose:
-                print out
+                print(out)
         
 BATZENCADIR  = os.environ.get("BATZENCADIR", os.path.expanduser("~") + os.path.sep + ".batzenca")
 session = Session(BATZENCADIR)

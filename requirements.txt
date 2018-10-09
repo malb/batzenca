@@ -1,4 +1,4 @@
-GitPython==0.3.2.RC1
+GitPython
 SQLAlchemy
 ipython
-pyme==0.9.0
+pyme==0.9.1
