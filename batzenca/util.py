@@ -252,7 +252,10 @@ def smtpserverize(email):
     import ConfigParser
     import smtplib
     import os
+    import ssl
     from batzenca import session
+
+    context = ssl.create_default_context()
 
     config = ConfigParser.ConfigParser()
     config.read(os.path.join(session.path, "smtp.cfg"))
@@ -263,10 +266,11 @@ def smtpserverize(email):
     if security.lower() == 'starttls':
         smtpserver = smtplib.SMTP(host, port=port)
         smtpserver.ehlo(name='localhost')
-        smtpserver.starttls()
+        smtpserver.starttls(context=context)
         smtpserver.login(config.get(email, "username"), config.get(email, "password"))
     elif security.lower() == 'tls':
-        smtpserver = smtplib.SMTP_SSL(host, port=port)
+
+        smtpserver = smtplib.SMTP_SSL(host, port=port, context=context)
         smtpserver.ehlo(name='localhost')
         smtpserver.login(config.get(email, "username"), config.get(email, "password"))
     else:
