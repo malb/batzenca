@@ -229,7 +229,8 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
 
     print("signatures:")
     for signature in key.signatures:
-        print("-", unicode(signature))
+        print("-", signature)
+
 
 def smtpserverize(email):
     """Read BATZENCA_DIR/smtp.cfg and construct smtpserver object for entry matching ``email``
