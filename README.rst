@@ -46,14 +46,8 @@ that keys must expire every 2 years.
 Prerequisites
 -------------
 
-* BatzenCA relies on `PyMe <http://bitbucket.org/malb/pyme/>`_ >= 0.9.0 for
+* BatzenCA relies on `GPG <https://pypi.org/project/gpg/>`_ for
   talking to GnuPG.
-
-  Note that an abandoned branch is available which attempts to switch to the
-  newer `PyGPGME <https://launchpad.net/pygpgme>`_ is available `on Bitbucket
-  <https://bitbucket.org/malb/batzenca/branch/pygpgme>`_. It was abandoned
-  because PyGPGME does not provide an interface to all GPGME functions needed by
-  BatzenCA.
 
 * BatzenCA uses `SQLAlchemy <http://www.sqlalchemy.org/>`_ to talk to a SQLite
   database which stores all metadata about keys such as users, releases, mailing

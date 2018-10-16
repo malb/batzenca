@@ -1,4 +1,4 @@
 GitPython
 SQLAlchemy
 ipython
-pyme==0.9.1
+gpg

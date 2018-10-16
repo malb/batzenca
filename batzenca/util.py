@@ -209,13 +209,13 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
     signatures = set([key])
 
     for mailinglist in mailinglists:
-        print("# " + mailinglist + " #")
+        print("# {} #".format(mailinglist))
 
         key.sign(mailinglist.policy.ca)
         signatures.add(mailinglist.policy.ca)
 
         if mailinglist.current_release.published:
-            _ = mailinglist.new_release()
+            mailinglist.new_release()
 
         mailinglist.current_release.deactivate_invalid()
         if key not in mailinglist.current_release:

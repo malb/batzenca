@@ -388,14 +388,13 @@ class Key(Base):
             :class:`batzenca.database.mailinglists.MailingList`.
             :class:`batzenca.database.releases.Release`.
         """
-        from keys import Key
-        from peers import Peer
-        from mailinglists import MailingList
-        from policies import Policy
-        from releases import Release
+        from .peers import Peer
+        from .mailinglists import MailingList
+        from .policies import Policy
+        from .releases import Release
 
         def extract_key(obj):
-            if isinstance(obj, str) or isinstance(obj, unicode):
+            if isinstance(obj, str):
                 return obj
             elif isinstance(obj, Key):
                 return obj

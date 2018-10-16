@@ -6,19 +6,20 @@
 Interface to low(er) level GnuPG interfaces.
 """
 
-import pyme
-import pyme.core
-import pyme.pygpgme
-import pyme.errors
-import pyme.constants.keylist
-import pyme.constants.sig
-import pyme.constants.status
+import os
+import datetime
+
+import gpg
+import gpg.core
+import gpg._gpgme
+import gpg.errors
+import gpg.constants.keylist
+import gpg.constants.sig
+import gpg.constants.status
 
 from collections import namedtuple
 UID = namedtuple('UID', ['name', 'email',  'comment'])
 
-import os
-import datetime
 
 class KeyError(Exception):
     """
@@ -26,18 +27,19 @@ class KeyError(Exception):
     """
     pass
 
+
 class GnuPG(object):
     """A GnuPG context.
 
     :param str home_dir: specifiy ``GNUPGHOME``, if ``None`` an implementation default is used.
 
     """
-    GPGME_PK_RSA   = pyme.pygpgme.GPGME_PK_RSA
-    GPGME_PK_RSA_E = pyme.pygpgme.GPGME_PK_RSA_E
-    GPGME_PK_RSA_S = pyme.pygpgme.GPGME_PK_RSA_S
-    GPGME_PK_ELG_E = pyme.pygpgme.GPGME_PK_ELG_E
-    GPGME_PK_DSA   = pyme.pygpgme.GPGME_PK_DSA
-    GPGME_PK_ELG   = pyme.pygpgme.GPGME_PK_ELG
+    GPGME_PK_RSA   = gpg._gpgme.GPGME_PK_RSA
+    GPGME_PK_RSA_E = gpg._gpgme.GPGME_PK_RSA_E
+    GPGME_PK_RSA_S = gpg._gpgme.GPGME_PK_RSA_S
+    GPGME_PK_ELG_E = gpg._gpgme.GPGME_PK_ELG_E
+    GPGME_PK_DSA   = gpg._gpgme.GPGME_PK_DSA
+    GPGME_PK_ELG   = gpg._gpgme.GPGME_PK_ELG
 
     alg_to_str = { GPGME_PK_RSA  : "GPGME_PK_RSA",
                    GPGME_PK_RSA_E: "GPGME_PK_RSA_E",
@@ -66,7 +68,7 @@ class GnuPG(object):
         return not (subkey.revoked or subkey.expired or subkey.disabled)
 
     def __init__(self, home_dir=None):
-        pyme.core.check_version(None)
+        gpg.core.check_version(None)
 
         self._home_dir = home_dir
 
@@ -75,11 +77,11 @@ class GnuPG(object):
                 os.mkdir(home_dir)
                 os.chmod(home_dir, 0o700)
 
-            for engine in pyme.core.get_engine_info():
-                pyme.core.set_engine_info(engine.protocol, engine.file_name.encode("utf-8"), home_dir.encode("utf-8"))
+            for engine in gpg.core.get_engine_info():
+                gpg.core.set_engine_info(engine.protocol, engine.file_name.encode("utf-8"), home_dir.encode("utf-8"))
 
-        self.ctx = pyme.core.Context()
-        self.ctx.set_keylist_mode(pyme.constants.keylist.mode.SIGS)
+        self.ctx = gpg.core.Context()
+        self.ctx.set_keylist_mode(gpg.constants.keylist.mode.SIGS)
         self.ctx.set_armor(1)
 
         # from: https://www.gnupg.org/documentation/manuals/gpgme/Text-Mode.html#Text-Mode
@@ -101,7 +103,7 @@ class GnuPG(object):
         :param keyid: a 16 character string encoding an integer in hexadecimal notation or an
             integer :math:`< 2^{64}`
         """
-        if isinstance(keyid, pyme.pygpgme._gpgme_key):
+        if str(type(keyid)) == "gpg._gpgme._gpgme_key":
             return keyid
 
         # we are caching for performance reasons
@@ -125,7 +127,7 @@ class GnuPG(object):
                 return key
             except AttributeError:
                 raise KeyError("Key '%s' not found."%keyid)
-        except pyme.errors.GPGMEError as e:
+        except gpg.errors.GPGMEError as e:
             raise KeyError("Key '%s' not found."%keyid)
 
     def have_secret_key(self, keyid):
@@ -151,7 +153,7 @@ class GnuPG(object):
                     return True
             except AttributeError:
                 return False
-        except pyme.errors.GPGMEError as e:
+        except gpg.errors.GPGMEError as e:
             return False
 
     def key_uid(self, keyid):
@@ -320,7 +322,7 @@ class GnuPG(object):
 
         :param keyid: see :func:`batzenca.gnupg.GnuPG.key_get` for accepted formats.
         """
-        from pyme.core import Data
+        from gpg.core import Data
         export_keys = Data()
         keys = [self.key_get(keyid) for keyid in keyids]
         self.ctx.op_export_keys(keys, 0, export_keys)
@@ -340,13 +342,13 @@ class GnuPG(object):
         if not self.have_secret_key(keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%keyid)
 
-        msg = pyme.core.Data(msg)
-        sig = pyme.core.Data()
+        msg = gpg.core.Data(msg)
+        sig = gpg.core.Data()
 
         self.ctx.signers_clear()
         self.ctx.signers_add(key)
 
-        self.ctx.op_sign(msg, sig, pyme.constants.sig.mode.DETACH)
+        self.ctx.op_sign(msg, sig, gpg.constants.sig.mode.DETACH)
 
         sig.seek(0, 0)
         return sig.read()
@@ -367,11 +369,11 @@ class GnuPG(object):
                 if  not self.key_okay(key) or not self.key_validity(key) >= 4:
                     raise ValueError("No UID of the key 0x%s has a sufficient level of validity, set always_trust=True if you want to force encryption."%key.subkeys[0].fpr[-16:])
 
-        plain = pyme.core.Data(msg)
-        cipher = pyme.core.Data()
-        flags = pyme.constants.ENCRYPT_NO_ENCRYPT_TO
+        plain = gpg.core.Data(msg)
+        cipher = gpg.core.Data()
+        flags = gpg.constants.ENCRYPT_NO_ENCRYPT_TO
         if always_trust:
-            flags |= pyme.constants.ENCRYPT_ALWAYS_TRUST
+            flags |= gpg.constants.ENCRYPT_ALWAYS_TRUST
         retval = self.ctx.op_encrypt(keys, flags, plain, cipher)
 
         cipher.seek(0,0)
@@ -383,13 +385,13 @@ class GnuPG(object):
 
         :param str cipher: the ciphertext
         """
-        cipher = pyme.core.Data(cipher)
-        plain  = pyme.core.Data()
+        cipher = gpg.core.Data(cipher)
+        plain  = gpg.core.Data()
         try:
             self.ctx.op_decrypt(cipher, plain)
             plain.seek(0,0)
             return plain.read()
-        except pyme.errors.GPGMEError as msg:
+        except gpg.errors.GPGMEError as msg:
             raise ValueError(msg)
 
     def sig_verify(self, msg, sig):
@@ -400,16 +402,16 @@ class GnuPG(object):
         :param str msg: the message
         :param str sig: the signature
         """
-        msg = pyme.core.Data(msg)
-        sig = pyme.core.Data(sig)
+        msg = gpg.core.Data(msg)
+        sig = gpg.core.Data(sig)
 
         self.ctx.op_verify(sig, msg, None)
         result = self.ctx.op_verify_result()
 
         sigs = []
         for sign in result.signatures:
-            if (sign.summary & pyme.constants.SIGSUM_VALID) == 1:
-                sigs.append( sign.fpr )
+            if (sign.summary & gpg.constants.SIGSUM_VALID) == 1:
+                sigs.append(sign.fpr)
 
         return tuple(sigs)
 
@@ -427,27 +429,9 @@ class GnuPG(object):
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
 
-        out = pyme.core.Data()
-
-        helper = {
-            "GET_LINE"         : {"keyedit.prompt" : ("lsign" if local else "sign", "quit")},
-            "GET_BOOL"         : {"sign_uid.okay" : "Y", "keyedit.save.okay" : "Y", "keyedit.sign_all.okay" : "Y"},
-            "ALREADY_SIGNED"   : None,
-            "GOT_IT"           : None,
-            "NEED_PASSPHRASE"  : None,
-            "GOOD_PASSPHRASE"  : None,
-            "KEY_CONSIDERED"   : None,
-            "USERID_HINT"      : None,
-            "EOF"              : None,
-            "PINENTRY_LAUNCHED": None,
-            "skip"             : 0,
-            "data"             : out,
-        }
-
-        self.ctx.signers_clear()
-        self.ctx.signers_add(signer_key)
-        self.ctx.op_edit(key, edit_fnc, helper, out)
-        self._key_cache = {} # invalidate the cache
+        self.ctx.signers =(signer_key,)
+        self.ctx.key_sign(key)
+        self._key_cache = {}  # invalidate the cache
 
     def key_delete_signature(self, keyid, signer_keyid):
         """
@@ -466,26 +450,60 @@ class GnuPG(object):
         except KeyError:
             signer_key = signer_keyid
 
-        out = pyme.core.Data()
+        # out = gpg.core.Data()
+
+        global interact_state
 
         for i, uid in enumerate(key.uids):
+            # cleaner = {
+            #     "GET_LINE"        : {"keyedit.prompt" : ("uid %d"%(i+1), "delsig", "save")},
+            #     "GET_BOOL"        : {"keyedit.save.okay" : "Y", "keyedit.delsig.unknown" : "Y"},
+            #     "GOT_IT"          : None,
+            #     "NEED_PASSPHRASE" : None,
+            #     "GOOD_PASSPHRASE" : None,
+            #     "USERID_HINT"     : None,
+            #     "EOF"             : None,
 
-            cleaner = {
-                "GET_LINE"        : {"keyedit.prompt" : ("uid %d"%(i+1), "delsig", "save")},
-                "GET_BOOL"        : {"keyedit.save.okay" : "Y", "keyedit.delsig.unknown" : "Y"},
-                "GOT_IT"          : None,
-                "NEED_PASSPHRASE" : None,
-                "GOOD_PASSPHRASE" : None,
-                "USERID_HINT"     : None,
-                "EOF"             : None,
+            #     "signer"          : signer_key,
+            #     "skip"            : 0,
+            #     "data"            : out,
+            # }
+            # self.ctx.op_edit(key, edit_fnc, cleaner, out)
 
-                "signer"          : signer_key,
-                "skip"            : 0,
-                "data"            : out,
-            }
-            self.ctx.op_edit(key, edit_fnc, cleaner, out)
+            interact_state = None
 
-        self._key_cache = {} # invalidate the cache
+            def edit_fnc(keyword, args):
+                global interact_state
+                if keyword == 'GOT_IT':
+                    return None
+                elif keyword == 'KEY_CONSIDERED':
+                    interact_state = args, "uid"
+                    return None
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "uid":
+                    interact_state = interact_state[0], "delsig"
+                    return "uid {}".format(i+1)
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "delsig":
+                    return "delsig"
+                elif keyword == 'GET_BOOL' and "keyedit.delsig" in args:
+                    if interact_state[0] and signer_key.fpr in interact_state[0]:
+                        interact_state = None, "save"
+                        return "Y"
+                    else:
+                        interact_state = None, "save"
+                        return "N"
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "save":
+                    return "save"
+                elif keyword == '':
+                    return None
+                print("Status: {}, args: {}, state: {} > ".format(keyword, args, interact_state), end='', flush=True)
+                try:
+                    return input()
+                except EOFError:
+                    return "quit"
+
+            self.ctx.interact(key, edit_fnc)
+
+        self._key_cache = {}  # invalidate the cache
 
     def key_set_trust(self, keyid, trust):
         """
@@ -497,7 +515,7 @@ class GnuPG(object):
         """
         key = self.key_get(keyid)
 
-        out = pyme.core.Data()
+        out = gpg.core.Data()
 
         helper = {
             "GET_LINE"        : { "keyedit.prompt" : ("trust", "quit"),
@@ -524,7 +542,7 @@ class GnuPG(object):
 
         """
         self._key_cache = {} # invalidate the cache
-        data = pyme.core.Data(data)
+        data = gpg.core.Data(data)
         self.ctx.op_import(data)
         res =  self.ctx.op_import_result()
         return dict((r.fpr, r.status) for r in res.imports)
@@ -550,7 +568,7 @@ class GnuPG(object):
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
 
-        out = pyme.core.Data()
+        out = gpg.core.Data()
 
         msg += "\n\n"
         msg = tuple(msg.splitlines())
@@ -590,7 +608,7 @@ class GnuPG(object):
            This will open an interactive session using rawinput
         """
         key = self.key_get(keyid)
-        out = pyme.core.Data()
+        out = gpg.core.Data()
 
         helper = {
             "GOT_IT"          : None,
@@ -608,20 +626,23 @@ class GnuPG(object):
 # from pygpa
 
 stat2str = {}
-for name in dir(pyme.constants.status):
+for name in dir(gpg.constants.status):
     if not name.startswith('__') and name != "util":
-        stat2str[getattr(pyme.constants.status, name)] = name
+        stat2str[getattr(gpg.constants.status, name)] = name
+
+interact_state = None
+
 
 def edit_fnc(stat, args, helper):
     try:
         while True:
-            helper["data"].seek(helper["skip"],0)
-            data = helper["data"].read()
+            helper["data"].seek(helper["skip"], 0)
+            data = helper["data"].read().decode("utf-8")
             helper["skip"] += len(data)
 
             if stat2str[stat] in helper:
                 if helper[stat2str[stat]] is None:
-                     return ""
+                    return ""
 
                 if args in helper[stat2str[stat]]:
                     ret = helper[stat2str[stat]][args]
@@ -642,7 +663,7 @@ def edit_fnc(stat, args, helper):
 
             if stat2str[stat] == "GET_BOOL" and args == "ask_revoke_sig.one":
                 for sk in helper["signer"].subkeys:
-                    #0x....
+                    # 0x....
                     if sk.keyid[2:].upper() in data:
                         return "Y"
                 return "N"
@@ -651,3 +672,5 @@ def edit_fnc(stat, args, helper):
             return input("(%s) %s > " % (stat2str[stat], args))
     except EOFError:
         pass
+
+
