@@ -197,7 +197,7 @@ class Key(Base):
         """
         from batzenca.session import session
 
-        with open(filename) as fh:
+        with open(filename, "rb") as fh:
             data = fh.read()
             res = session.gnupg.keys_import(data)
             if len(res) == 0:

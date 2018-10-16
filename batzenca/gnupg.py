@@ -118,9 +118,9 @@ class GnuPG(object):
                 pass
             try:
                 if keyid.startswith("0x"):
-                    key = self.ctx.get_key(str(keyid), 0)
+                    key = self.ctx.get_key(str(keyid).encode("utf-8"), 0)
                 else:
-                    key = self.ctx.get_key("0x"+str(keyid), 0)
+                    key = self.ctx.get_key("0x"+str(keyid).encode("utf-8"), 0)
                 self._key_cache[keyid] = key
                 return key
             except AttributeError:
@@ -144,9 +144,9 @@ class GnuPG(object):
                 pass
             try:
                 if keyid.startswith("0x"):
-                    key = self.ctx.get_key(str(keyid), True)
+                    key = self.ctx.get_key(str(keyid).encode("utf-8"), True)
                 else:
-                    key = self.ctx.get_key("0x"+str(keyid), True)
+                    key = self.ctx.get_key("0x"+str(keyid).encode("utf-8"), True)
                 if key:
                     return True
             except AttributeError:

@@ -49,10 +49,10 @@ class Peer(Base):
         else:
             self.keys = keys
 
-        self.data0 = unicode(data0)
-        self.data1 = unicode(data1)
-        self.data2 = unicode(data2)
-        self.data3 = unicode(data3)
+        self.data0 = str(data0)
+        self.data1 = str(data1)
+        self.data2 = str(data2)
+        self.data3 = str(data3)
 
     @classmethod
     def merge(cls, left, right):
@@ -175,18 +175,18 @@ class Peer(Base):
                 return tuple(r for r in res)
 
     def __repr__(self):
-        return unicode(u"<Peer: %s, %s>"%(self.id, self.name)).encode('utf-8')
+        return "<Peer: %s, %s>"%(self.id, self.name)
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return repr(self)
 
-    def __unicode__(self):
-        data = (self.data0, self.data1, self.data2, self.data3)
-        data = u", ".join(d for d in data if d)
-        if data:
-            return u"%s - %s"%(self.name, data)
-        else:
-            return u"%s"%self.name
+    # def __unicode__(self):
+    #     data = (self.data0, self.data1, self.data2, self.data3)
+    #     data = u", ".join(d for d in data if d)
+    #     if data:
+    #         return u"%s - %s"%(self.name, data)
+    #     else:
+    #         return u"%s"%self.name
 
     def __hash__(self):
         return hash((self.name, self.data0, self.data1, self.data2, self.data3))
