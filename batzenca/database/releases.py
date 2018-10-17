@@ -656,7 +656,6 @@ class Release(Base):
             M.append( msg )
         return tuple(M)
 
-
     def dump(self, filename=None):
         """Write this release to to filename.yaml and filename.asc where the
         former receives :attr:`batzenca.database.releases.Release.yaml` and the
@@ -671,9 +670,8 @@ class Release(Base):
             filename = os.path.join(session.release_dump_path,
                                     "%s-%04d%02d%02d"%(self.mailinglist.name,
                                                        self.date.year, self.date.month, self.date.day))
-        codecs.open(filename+".yaml", encoding="utf8", mode="w").write( self.yaml )
-        open(filename+".asc", "w").write( self(previous=None, check=False)[1] )
-
+        codecs.open(filename+".yaml", encoding="utf8", mode="w").write(self.yaml)
+        open(filename+".asc", "wb").write(self(previous=None, check=False)[1])
 
     def send(self, smtpserver, previous=None, check=True, debug=False, attachments=None,
              new_peer_tolerance_days=180, key_expiry_warning_days=30):
