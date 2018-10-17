@@ -103,7 +103,8 @@ class GnuPG(object):
         :param keyid: a 16 character string encoding an integer in hexadecimal notation or an
             integer :math:`< 2^{64}`
         """
-        if str(type(keyid)) == "gpg._gpgme._gpgme_key":
+        # TODO This is an ugy hack, figure out how to get type properly
+        if "._gpgme_key" in str(type(keyid)):
             return keyid
 
         # we are caching for performance reasons
@@ -126,9 +127,9 @@ class GnuPG(object):
                 self._key_cache[keyid] = key
                 return key
             except AttributeError:
-                raise KeyError("Key '%s' not found."%keyid)
+                raise KeyError("Key {} not found.".format(keyid))
         except gpg.errors.GPGMEError as e:
-            raise KeyError("Key '%s' not found."%keyid)
+            raise KeyError("Key {} not found.".format(keyid))
 
     def have_secret_key(self, keyid):
         """

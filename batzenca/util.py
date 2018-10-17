@@ -21,8 +21,8 @@ def thunderbird_rules(release, mime_encode=False, mime_filename=None):
         '<mailinglist.name>_rules_<year>-<month>-<day>.xml')
 
     """
-    import StringIO
-    fh = StringIO.StringIO()
+    from io import StringIO
+    fh = StringIO()
 
     fh.write("""<?xml version="1.0" ?>\n""")
     fh.write("  <pgpRuleList>\n")
@@ -61,8 +61,8 @@ def gpgconf_rules(release, mime_encode=False, mime_filename=None):
         '<mailinglist.name>_group_<year>-<month>-<day>.conf')
 
     """
-    import StringIO
-    fh = StringIO.StringIO()
+    from io import StringIO
+    fh = StringIO()
 
     key_ids = [str(key.kid) for key in release.active_keys]
     fh.write("group %s = %s\n"%(release.mailinglist.email, " ".join(key_ids)))
@@ -249,7 +249,7 @@ def smtpserverize(email):
     Supported values for security are "starttls" and "tls".
 
     """
-    import ConfigParser
+    import configparser
     import smtplib
     import os
     import ssl
@@ -257,7 +257,7 @@ def smtpserverize(email):
 
     context = ssl.create_default_context()
 
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     config.read(os.path.join(session.path, "smtp.cfg"))
     host = config.get(email, 'host')
     port = config.getint(email, 'port')
@@ -296,11 +296,11 @@ def publish(mailinglists=None, debug=False, msg="", attach=[]):
     smtpservers = {}
 
     for i, mailinglist in enumerate(mailinglists):
-        print("%3d. [%s]"%(i, mailinglist), end=None)
+        print("%3d. [%s] "%(i, mailinglist), end='')
         release = mailinglist.current_release
 
         if release.published:
-            print
+            print()
             continue
 
         attachments = []
@@ -324,7 +324,7 @@ def publish(mailinglists=None, debug=False, msg="", attach=[]):
         print("published")
         sys.stdout.flush()
 
-    for smtpserver in smtpservers.itervalues():
+    for smtpserver in smtpservers.values():
         smtpserver.quit()
 
     if not debug:

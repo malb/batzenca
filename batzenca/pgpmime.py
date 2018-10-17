@@ -9,17 +9,13 @@ Realises PGP/MIME signatures and encryption.
 
     This module is based on https://pypi.python.org/pypi/pgp-mime/
 """
-from email import Message
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 from email.encoders import encode_7or8bit
-from email import encoders
-from email.mime.base import MIMEBase
+from .database.base import EntryNotFound
+from .database.keys import Key
 import email
 
-import os
-import mimetypes
 
 from batzenca.session import session
 
@@ -82,9 +78,9 @@ class PGPMIMEsigned(MIMEMultipart):
         res = []
         for sig in sigs:
             try:
-                key = Key.from_keyid(int(sig[-16:],16))
+                key = Key.from_keyid(int(sig[-16:], 16))
             except EntryNotFound:
-                key = Key(int(sig[-16:],16))
+                key = Key(int(sig[-16:], 16))
             res.append(key)
         return tuple(res)
 
@@ -94,18 +90,18 @@ class PGPMIMEsigned(MIMEMultipart):
         :param :class:`batzenca.database.keys.Key` signer: the potential signing key
 
         """
-        from batzenca import EntryNotFound, Key
 
         signatures = self.signatures
 
         for sig in signatures:
             if isinstance(signer, Key):
-                if key == signer:
+                if sig == signer:
                     return True
             else:
-                if key.email == signer:
+                if sig == signer.email:
                     return True
         return False
+
 
 class PGPMIMEencrypted(MIMEMultipart):
     """
@@ -158,6 +154,7 @@ class PGPMIMEencrypted(MIMEMultipart):
                     return PGPMIMEsigned.from_parts(msg, sig)
         return msg
 
+
 def PGPMIME(msg, recipients, signer):
     """Construct a PGP/MIME signed and encrypted message from MIME message ``msg``, signed by
     ``signer`` and encrypted for all entries of ``recipients``.
@@ -171,8 +168,9 @@ def PGPMIME(msg, recipients, signer):
     """
     return PGPMIMEencrypted( PGPMIMEsigned(msg, signer), recipients)
 
+
 def flatten(msg):
-    from cStringIO import StringIO
+    from io import StringIO
     from email.generator import Generator
     fp = StringIO()
     g = Generator(fp, mangle_from_=False)

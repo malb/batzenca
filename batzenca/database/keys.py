@@ -65,7 +65,7 @@ class Key(Base):
         except KeyError:
             if name is None or email is None or timestamp is None:
                 raise ValueError(err_msg%self.kid)
-            self.name      = unicode(name.strip())
+            self.name      = str(name.strip())
             self.email     = str(email.strip())
             self.timestamp = timestamp
             return
@@ -259,7 +259,7 @@ class Key(Base):
                 warnings.warn("More than one key found, picking first one.")
             return ret[0]
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         Return ``True`` if this key has at least one valid (not revoked, expired or disabled)
         subkey for signing and one valid subkey for encrypting.
