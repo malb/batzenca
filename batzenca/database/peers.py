@@ -178,15 +178,12 @@ class Peer(Base):
         return "<Peer: %s, %s>"%(self.id, self.name)
 
     def __str__(self):
-        return repr(self)
-
-    # def __unicode__(self):
-    #     data = (self.data0, self.data1, self.data2, self.data3)
-    #     data = u", ".join(d for d in data if d)
-    #     if data:
-    #         return u"%s - %s"%(self.name, data)
-    #     else:
-    #         return u"%s"%self.name
+        data = (self.data0, self.data1, self.data2, self.data3)
+        data = u", ".join(d for d in data if d)
+        if data:
+            return u"%s - %s"%(self.name, data)
+        else:
+            return u"%s"%self.name
 
     def __hash__(self):
         return hash((self.name, self.data0, self.data1, self.data2, self.data3))
