@@ -1,4 +1,5 @@
 GitPython
 SQLAlchemy
 ipython
+jupyter
 gpg

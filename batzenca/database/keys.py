@@ -8,6 +8,7 @@ Keys represent PGP keys and are typically stored in the database.
 from .base import Base, EntryNotFound
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
+from batzenca.gnupg import KeyError as GPGKeyError
 
 import warnings
 
@@ -62,7 +63,7 @@ class Key(Base):
 
         try:
             session.gnupg.key_get(self.kid)
-        except KeyError:
+        except GPGKeyError:
             if name is None or email is None or timestamp is None:
                 raise ValueError(err_msg%self.kid)
             self.name      = str(name.strip())
@@ -266,7 +267,10 @@ class Key(Base):
 
         """
         from batzenca.session import session
-        return session.gnupg.key_okay(self.kid)
+        try:
+            return session.gnupg.key_okay(self.kid)
+        except GPGKeyError:
+            return False
 
     def is_expired(self):
         """Return ``True`` if all subkeys of this key which can be used for encryption are
