@@ -548,7 +548,7 @@ class GnuPG(object):
         res =  self.ctx.op_import_result()
         return dict((r.fpr, r.status) for r in res.imports)
 
-    def key_revsig(self, keyid, signer_keyid, code=4, msg=""):
+    def key_revsig(self, keyid, signer_keyid, code=0, msg="no particular reason given"):
         """
         Add a revocation signature for ``signer_keyid`` to ``keyid``.
 
@@ -566,68 +566,59 @@ class GnuPG(object):
         key = self.key_get(keyid)
         signer_key = self.key_get(signer_keyid)
 
+        msg += "\n\n"
+        msg = msg.splitlines()
+
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
 
-        out = gpg.core.Data()
+        for i, uid in enumerate(key.uids):
+            interact_state = None
 
-        msg += "\n\n"
-        msg = tuple(msg.splitlines())
-
-        # helper = {
-        #     "GET_LINE"        : { "keyedit.prompt" : ("revsig", "quit"),
-        #                           "ask_revocation_reason.code" : str(code) ,
-        #                           "ask_revocation_reason.text" :  msg
-        #                       },
-        #     "GET_BOOL"        : { "ask_revoke_sig.okay" : "Y",
-        #                           "keyedit.save.okay" : "Y",
-        #                           "ask_revocation_reason.okay" : "Y" },
-        #     "GOT_IT"          : None,
-        #     "NEED_PASSPHRASE" : None,
-        #     "GOOD_PASSPHRASE" : None,
-        #     "USERID_HINT"     : None,
-        #     "KEY_CONSIDERED"  : None,
-        #     "EOF"             : None,
-
-        #     "signer"          : signer_key,
-        #     "skip"            : 0,
-        #     "data"            : out,
-        # }
-
-        interact_state = None
-
-        def edit_fnc(keyword, args):
-            global interact_state
-            if keyword == 'GOT_IT':
-                return None
-            elif keyword == 'KEY_CONSIDERED':
-                interact_state = args, "uid"
-                return None
-            elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "uid":
-                interact_state = interact_state[0], "revsig"
-                return "uid {}".format(i+1)
-            elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "revsig":
-                return "revsig"
-            elif keyword == 'GET_BOOL' and "keyedit.revsig" in args:
-                if interact_state[0] and signer_key.fpr in interact_state[0]:
-                    interact_state = None, "save"
+            def edit_fnc(keyword, args):
+                global interact_state
+                if keyword == 'GOT_IT':
+                    return None
+                elif keyword == 'KEY_CONSIDERED':
+                    interact_state = args, "uid"
+                    return None
+                elif keyword == "GET_BOOL" and args == "ask_revoke_sig.one":
                     return "Y"
-                else:
-                    interact_state = None, "save"
-                    return "N"
-            elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "save":
-                return "save"
-            elif keyword == '':
-                return None
-            print("Status: {}, args: {}, state: {} > ".format(keyword, args, interact_state), end='', flush=True)
-            try:
-                return input()
-            except EOFError:
-                return "quit"
+                elif keyword == "GET_BOOL" and args == "ask_revoke_sig.okay":
+                    return "Y"
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "uid":
+                    interact_state = interact_state[0], "revsig"
+                    return "uid {}".format(i+1)
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "revsig":
+                    return "revsig"
+                elif keyword == "GET_LINE" and args == "ask_revocation_reason.code":
+                    return str(code)
+                elif keyword == "GET_LINE" and args == "ask_revocation_reason.text":
+                    return msg
+                elif keyword == "GET_BOOL" and args == "ask_revocation_reason.okay":
+                    return "Y"
+                elif keyword == 'GET_BOOL' and "keyedit.revsig" in args:
+                    if interact_state[0] and signer_key.fpr in interact_state[0]:
+                        interact_state = None, "save"
+                        return "Y"
+                    else:
+                        interact_state = None, "save"
+                        return "N"
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "save":
+                    return "save"
+                elif keyword == '':
+                    print("None")
+                    return None
+                print("Keyword: {}, args: {}, state: {} > ".format(keyword, args, interact_state), end='', flush=True)
+                try:
+                    return input()
+                except EOFError:
+                    return "quit"
 
-        self.ctx.signers_clear()
-        self.ctx.signers_add(signer_key)
-        self.ctx.interact(key, edit_fnc)
+            self.ctx.signers_clear()
+            self.ctx.signers_add(signer_key)
+            self.ctx.interact(key, edit_fnc)
+
         self._key_cache = {} # invalidate the cache
 
     def key_edit(self, keyid):
