@@ -80,7 +80,7 @@ class GnuPG(object):
             for engine in gpg.core.get_engine_info():
                 gpg.core.set_engine_info(engine.protocol, engine.file_name.encode("utf-8"), home_dir.encode("utf-8"))
 
-        self.ctx = gpg.core.Context()
+        self.ctx = gpg.core.Context(home_dir=home_dir.encode("utf-8"))
         self.ctx.set_keylist_mode(gpg.constants.keylist.mode.SIGS)
         self.ctx.set_armor(1)
 
