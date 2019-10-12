@@ -7,7 +7,9 @@ Interface to low(er) level GnuPG interfaces.
 """
 
 import os
+import sys
 import datetime
+import tempfile
 
 import gpg
 import gpg.core
@@ -128,7 +130,7 @@ class GnuPG(object):
                 return key
             except AttributeError:
                 raise KeyError("Key {} not found.".format(keyid))
-        except gpg.errors.GPGMEError as e:
+        except gpg.errors.GPGMEError:
             raise KeyError("Key {} not found.".format(keyid))
 
     def have_secret_key(self, keyid):
@@ -154,7 +156,7 @@ class GnuPG(object):
                     return True
             except AttributeError:
                 return False
-        except gpg.errors.GPGMEError as e:
+        except gpg.errors.GPGMEError:
             return False
 
     def key_uid(self, keyid):
@@ -367,7 +369,7 @@ class GnuPG(object):
 
         if not always_trust:
             for key in keys:
-                if  not self.key_okay(key) or not self.key_validity(key) >= 4:
+                if not self.key_okay(key) or not self.key_validity(key) >= 4:
                     raise ValueError("No UID of the key 0x%s has a sufficient level of validity, set always_trust=True if you want to force encryption."%key.subkeys[0].fpr[-16:])
 
         plain = gpg.core.Data(msg)
@@ -451,58 +453,45 @@ class GnuPG(object):
         except KeyError:
             signer_key = signer_keyid
 
-        # out = gpg.core.Data()
-
-        global interact_state
+        target = signer_key.kid.upper()[2:]
 
         for i, uid in enumerate(key.uids):
-            # cleaner = {
-            #     "GET_LINE"        : {"keyedit.prompt" : ("uid %d"%(i+1), "delsig", "save")},
-            #     "GET_BOOL"        : {"keyedit.save.okay" : "Y", "keyedit.delsig.unknown" : "Y"},
-            #     "GOT_IT"          : None,
-            #     "NEED_PASSPHRASE" : None,
-            #     "GOOD_PASSPHRASE" : None,
-            #     "USERID_HINT"     : None,
-            #     "EOF"             : None,
-
-            #     "signer"          : signer_key,
-            #     "skip"            : 0,
-            #     "data"            : out,
-            # }
-            # self.ctx.op_edit(key, edit_fnc, cleaner, out)
-
-            interact_state = None
-
             def edit_fnc(keyword, args):
                 global interact_state
+                global sink_fn
                 if keyword == 'GOT_IT':
                     return None
                 elif keyword == 'KEY_CONSIDERED':
-                    interact_state = args, "uid"
+                    interact_state = "uid"
                     return None
-                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "uid":
-                    interact_state = interact_state[0], "delsig"
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state == "uid":
+                    interact_state = "delsig"
                     return "uid {}".format(i+1)
-                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "delsig":
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state == "delsig":
+                    interact_state = "subkeys"
                     return "delsig"
                 elif keyword == 'GET_BOOL' and "keyedit.delsig" in args:
-                    if interact_state[0] and signer_key.fpr in interact_state[0]:
-                        interact_state = None, "save"
+                    if target in open(sink_fn).readlines()[-1]:
                         return "Y"
                     else:
-                        interact_state = None, "save"
                         return "N"
-                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state[1] == "save":
+                elif keyword == 'GET_LINE' and args == "keyedit.prompt" and interact_state == "subkeys":
                     return "save"
                 elif keyword == '':
                     return None
-                print("Status: {}, args: {}, state: {} > ".format(keyword, args, interact_state), end='', flush=True)
+                print("Status: {}, args: {}, interact_state: {} > ".format(keyword, args, interact_state), end='', flush=True)  #
                 try:
                     return input()
                 except EOFError:
                     return "quit"
 
-            self.ctx.interact(key, edit_fnc)
+            # HACK Yes, this is extremely hamfisted but I can't make it work with in-memory objects
+            global sink_fn
+            sink_fh, sink_fn  = tempfile.mkstemp()
+            sink_fh = os.fdopen(sink_fh)
+            self.ctx.interact(key, edit_fnc, sink=sink_fh)
+            sink_fh.close()
+            os.remove(sink_fn)
 
         self._key_cache = {}  # invalidate the cache
 
