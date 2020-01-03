@@ -450,10 +450,13 @@ class GnuPG(object):
         key = self.key_get(keyid)
         try:
             signer_key = self.key_get(signer_keyid)
+            target = signer_key.kid.upper()[2:]
         except KeyError:
             signer_key = signer_keyid
-
-        target = signer_key.kid.upper()[2:]
+            try:
+                target = signer_key.kid.upper()[2:]
+            except AttributeError:
+                target = signer_key.upper()[2:]
 
         for i, uid in enumerate(key.uids):
             def edit_fnc(keyword, args):
@@ -537,7 +540,7 @@ class GnuPG(object):
         res =  self.ctx.op_import_result()
         return dict((r.fpr, r.status) for r in res.imports)
 
-    def key_revsig(self, keyid, signer_keyid, code=0, msg="no particular reason given"):
+    def key_revsig(self, keyid, signer_keyid, code=4, msg="no particular reason given"):
         """
         Add a revocation signature for ``signer_keyid`` to ``keyid``.
 
@@ -556,16 +559,18 @@ class GnuPG(object):
         signer_key = self.key_get(signer_keyid)
 
         msg += "\n\n"
-        msg = msg.splitlines()
 
         if not self.have_secret_key(signer_keyid):
             raise ValueError("You do not have the secret key for %s in your GnuPG keyring."%signer_keyid)
+
+        print(key)
 
         for i, uid in enumerate(key.uids):
             interact_state = None
 
             def edit_fnc(keyword, args):
                 global interact_state
+                print("Keyword: {}, args: {}, interact_state: {} > ".format(keyword, args, interact_state), flush=True)
                 if keyword == 'GOT_IT':
                     return None
                 elif keyword == 'KEY_CONSIDERED':
@@ -598,7 +603,6 @@ class GnuPG(object):
                 elif keyword == '':
                     print("None")
                     return None
-                print("Keyword: {}, args: {}, state: {} > ".format(keyword, args, interact_state), end='', flush=True)
                 try:
                     return input()
                 except EOFError:
@@ -606,7 +610,7 @@ class GnuPG(object):
 
             self.ctx.signers_clear()
             self.ctx.signers_add(signer_key)
-            self.ctx.interact(key, edit_fnc)
+            self.ctx.interact(key, edit_fnc, sink=sys.stdout)
 
         self._key_cache = {} # invalidate the cache
 
