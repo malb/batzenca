@@ -85,7 +85,7 @@ class Policy(Base):
                 raise ValueError("Algoritm '%s' is unknown. Supported algorithms are '%s'"%(alg, ", ".session.gnupg.str_to_alg.keys()))
         self.algorithms_str = ",".join(algs)
 
-        self.description = unicode(description)
+        self.description = description
 
     @classmethod
     def from_key(cls, key):
