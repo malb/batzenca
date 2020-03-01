@@ -139,38 +139,39 @@ def find_orphaned_keys():
     return tuple(orphans)
 
 
-def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy=False):
+def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy=False, revoke=True):
     """Import a new ``key`` for ``peer``.
 
-    This function does the following for all mailing lists on which the provided
-    ``peer`` is currently subscribed.
+    This function does the following for all mailing lists on which the provided ``peer`` is
+    currently subscribed.
 
-    1. check if the key passes policy checks
+        1. check if the key passes policy checks
 
-    2. revoke all signatures on the old key of the provided peer which is
-       replaced by the provided ``key``
+        2. revoke all signatures on the old key of the provided peer which is replaced by the
+           provided ``key``
 
-    3. sign the key with the CA key
+        3. sign the key with the CA key
 
-    4. create a new release if necessary
+        4. create a new release if necessary
 
-    5. add the key the current release
+        5. add the key the current release
 
-    6. delete all superfluous signatures
+        6. delete all superfluous signatures
 
     :param batzenca.database.keys.Key key: the new key
 
-    :param batzenca.database.peers.Peer peer: the peer to use in case it cannot
-        be determined automtically
+    :param batzenca.database.peers.Peer peer: the peer to use in case it cannot be determined
+        automtically
 
-    :param iterable mailinglists: a list of mailing lists to consider or
-        ``None`` for all.
+    :param iterable mailinglists: a list of mailing lists to consider or ``None`` for all.
 
-    :param boolean force: by default a key is only added to a list if the
-        matching peer has a key in the current release. If ``force==True`` the
-        key is added unconditionally.
+    :param boolean force: by default a key is only added to a list if the matching peer has a key in
+        the current release.  If ``force==True`` the key is added unconditionally.  Ignored when
+        mailing lists are given explicitly.
 
     :param ignore_policy: ignore policy violations.
+
+    :param revoke: revoke previous signatures.
 
     """
     from batzenca.database import MailingList, Peer
@@ -186,6 +187,8 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
 
     if mailinglists is None:
         mailinglists = MailingList.all()
+    else:
+        force = True
 
     mailinglists = [m for m in mailinglists if force or (peer in m.current_release)]
 
@@ -201,7 +204,8 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
     if peer.key and peer.key != key:
         for mailinglist in mailinglists:
             if mailinglist.policy.ca in peer.key.signatures:
-                peer.key.revoke_signature(mailinglist.policy.ca)
+                if revoke:
+                    peer.key.revoke_signature(mailinglist.policy.ca)
     key.peer = peer
 
     # 5. add the key the current release
@@ -219,6 +223,10 @@ def import_new_key(key, peer=None, mailinglists=None, force=False, ignore_policy
 
         mailinglist.current_release.deactivate_invalid()
         if key not in mailinglist.current_release:
+            if not revoke:
+                for _key in peer.keys:
+                    if _key in mailinglist.current_release.active_keys:
+                        mailinglist.current_release._get_assoc(_key).is_active = False
             mailinglist.current_release.add_key(key)
 
         print("done")
@@ -369,6 +377,6 @@ def new_ca_key(new_key, old_key):
                 key.sign(new_key)
 
     try:
-        import_new_key(new_key)  # update CA as member
+        import_new_key(new_key, revoke=False)  # update CA as member
     except EntryNotFound:  # sometimes the CA is no peer
         pass
